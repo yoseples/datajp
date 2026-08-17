@@ -35,7 +35,7 @@ export default function StaffFilters({
         
         {/* View Mode Switcher */}
         <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start overflow-x-auto">
-          {/* 1. Bagan Struktur Redaksi (Pertama) */}
+          {/* Bagan Struktur Redaksi (Pertama) */}
           <button
             onClick={() => setActiveView('orgchart')}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
@@ -45,33 +45,33 @@ export default function StaffFilters({
             }`}
           >
             <GitFork className="w-3.5 h-3.5" />
-            1. Bagan Struktur Redaksi
+            Bagan Struktur Redaksi
           </button>
 
-          {/* 2. Tabel Data */}
+          {/* Tabel Data */}
           <button
             onClick={() => setActiveView('table')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               activeView === 'table'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Table className="w-3.5 h-3.5 text-blue-600" />
-            2. Tabel Data
+            Tabel Data
           </button>
 
-          {/* 3. Kartu Grid (Posisi Akhir) */}
+          {/* Kartu Grid (Posisi Akhir) */}
           <button
             onClick={() => setActiveView('grid')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               activeView === 'grid'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5 text-slate-600" />
-            3. Kartu Grid
+            Kartu Grid
           </button>
         </div>
 
