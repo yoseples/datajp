@@ -15,6 +15,7 @@ import StaffFormModal from './components/StaffFormModal';
 import StaffDetailModal from './components/StaffDetailModal';
 import IdCardModal from './components/IdCardModal';
 import PublicVerifyModal from './components/PublicVerifyModal';
+import LoginPage from './components/LoginPage';
 import { 
   Building2, 
   Globe, 
@@ -26,7 +27,19 @@ import {
   Plus
 } from 'lucide-react';
 
+const USER_STORAGE_KEY = 'JARRAKPOS_AUTH_USER_V1';
+
 export default function App() {
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem(USER_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // Master State
   const [staffList, setStaffList] = useState([]);
   const [activeView, setActiveView] = useState('grid'); // 'grid' | 'table' | 'orgchart'
@@ -62,6 +75,28 @@ export default function App() {
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
     setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Auth Handlers
+  const handleLoginSuccess = (user, remember) => {
+    setCurrentUser(user);
+    if (remember) {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    }
+    confetti({
+      particleCount: 70,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+    showToast(`Selamat datang kembali, ${user.name}!`);
+  };
+
+  const handleLogout = () => {
+    if (confirm('Apakah Anda ingin keluar dari sistem Bank Data Jarrakpos?')) {
+      setCurrentUser(null);
+      localStorage.removeItem(USER_STORAGE_KEY);
+      showToast('Anda telah keluar dari sistem.', 'info');
+    }
   };
 
   // Filter logic
@@ -168,6 +203,11 @@ export default function App() {
     setIsVerifyModalOpen(true);
   };
 
+  // If user is not logged in, show LoginPage
+  if (!currentUser) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col justify-between">
       
@@ -183,6 +223,8 @@ export default function App() {
 
       {/* Main Navbar */}
       <Navbar
+        currentUser={currentUser}
+        onLogout={handleLogout}
         staffList={staffList}
         onOpenAddModal={handleOpenAddModal}
         onResetData={handleResetData}

@@ -9,11 +9,15 @@ import {
   Printer, 
   Search,
   Database,
-  Users
+  Users,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
-import { exportToCSV, exportToJSON, resetToInitialStaff } from '../utils/storage';
+import { exportToCSV, exportToJSON } from '../utils/storage';
 
 export default function Navbar({ 
+  currentUser,
+  onLogout,
   staffList, 
   onOpenAddModal, 
   onResetData, 
@@ -96,8 +100,9 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons & User Profile */}
           <div className="flex items-center gap-2 sm:gap-3">
+            
             {/* Direct Add Button */}
             <button
               onClick={onOpenAddModal}
@@ -153,6 +158,28 @@ export default function Navbar({
               />
             </div>
 
+            {/* User Profile Info & Logout */}
+            {currentUser && (
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
+                <div className="hidden xl:block text-right">
+                  <div className="text-xs font-bold text-white leading-tight truncate max-w-[140px]">
+                    {currentUser.name}
+                  </div>
+                  <div className="text-[10px] text-rose-400 font-medium truncate max-w-[140px]">
+                    {currentUser.badge || currentUser.role}
+                  </div>
+                </div>
+
+                <button
+                  onClick={onLogout}
+                  title={`Keluar (${currentUser.email})`}
+                  className="flex items-center gap-1 bg-slate-800 hover:bg-rose-950/80 text-slate-400 hover:text-rose-300 border border-slate-700 hover:border-rose-700/80 p-2.5 rounded-xl transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Reset Button */}
             <button
               onClick={() => {
@@ -165,6 +192,7 @@ export default function Navbar({
             >
               <RotateCcw className="w-4 h-4" />
             </button>
+
           </div>
 
         </div>
