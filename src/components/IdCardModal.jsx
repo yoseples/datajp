@@ -11,11 +11,19 @@ import {
   RotateCw,
   CheckCircle2,
   Phone,
-  Globe
+  Globe,
+  Lock,
+  Eye
 } from 'lucide-react';
 import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
-export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
+export default function IdCardModal({ 
+  staff, 
+  isOpen, 
+  onClose, 
+  onVerify,
+  canDownload = true // Only Admin & Developer can download/print
+}) {
   const [qrUrl, setQrUrl] = useState('');
   const [activeSide, setActiveSide] = useState('front'); // 'front' | 'back'
   const cardFrontRef = useRef(null);
@@ -23,7 +31,6 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
 
   useEffect(() => {
     if (staff) {
-      // Create verification payload URL or data
       const verifyData = `https://jarrakpos.com/verifikasi-pers?id=${encodeURIComponent(staff.id)}&nip=${encodeURIComponent(staff.nip || '')}&name=${encodeURIComponent(staff.name)}`;
       
       QRCode.toDataURL(verifyData, {
@@ -42,16 +49,25 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
   if (!isOpen || !staff) return null;
 
   const handlePrint = () => {
+    if (!canDownload) {
+      alert('Fitur Cetak KTA hanya dapat diakses oleh Admin dan Developer!');
+      return;
+    }
     window.print();
   };
 
   const handleDownload = async (side) => {
+    if (!canDownload) {
+      alert('Fitur Unduh Berkas KTA hanya dapat diakses oleh Admin dan Developer!');
+      return;
+    }
+
     const targetRef = side === 'front' ? cardFrontRef.current : cardBackRef.current;
     if (!targetRef) return;
 
     try {
       const canvas = await html2canvas(targetRef, {
-        scale: 3, // High DPI for crisp printing
+        scale: 3,
         useCORS: true,
         backgroundColor: '#ffffff'
       });
@@ -65,21 +81,24 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6">
+    <div 
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 select-none"
+      onContextMenu={(e) => e.preventDefault()} // Disable Right Click on ID Card Modal
+    >
       <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header Bar */}
         <div className="bg-slate-950 px-6 py-4 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="p-1.5 rounded-xl bg-white border border-rose-500/40 w-9 h-9 flex items-center justify-center">
-              <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain" />
+              <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain pointer-events-none" />
             </div>
             <div>
               <h3 className="font-bold text-base sm:text-lg text-white flex items-center gap-2">
                 Kartu Tanda Anggota (KTA) Digital Resmi
               </h3>
               <p className="text-xs text-slate-400">
-                Format Standar Pers Jarrakpos.com & Dewan Pers
+                Format Standar Pers Jarrakpos.com &amp; Dewan Pers
               </p>
             </div>
           </div>
@@ -97,7 +116,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
         {/* Modal Body */}
         <div className="p-6 sm:p-8 space-y-6">
           
-          {/* Side Switcher & Download Bar */}
+          {/* Side Switcher & Action Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-800/80 p-3 rounded-2xl border border-slate-700/80">
             <div className="flex items-center gap-2">
               <button
@@ -122,26 +141,38 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
               </button>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleDownload(activeSide)}
-                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 transition-all"
-              >
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                Unduh PNG (Sisi Aktif)
-              </button>
-              <button
-                onClick={handlePrint}
-                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                Cetak KTA
-              </button>
-            </div>
+            {/* Download & Print Controls (Restricted to Admin & Developer) */}
+            {canDownload ? (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownload(activeSide)}
+                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 transition-all"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  Unduh PNG
+                </button>
+                <button
+                  onClick={handlePrint}
+                  className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Cetak KTA
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-700 text-slate-400 text-xs">
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Unduh/Cetak KTA dikhususkan untuk Admin Redaksi</span>
+              </div>
+            )}
           </div>
 
-          {/* ID Card Display Area */}
-          <div id="printable-id-card" className="flex flex-wrap justify-center items-center gap-8 py-4">
+          {/* ID Card Display Area (Protected with no-context-menu) */}
+          <div 
+            id="printable-id-card" 
+            className="flex flex-wrap justify-center items-center gap-8 py-4 select-none"
+            onContextMenu={(e) => e.preventDefault()}
+          >
             
             {/* FRONT CARD */}
             <div 
@@ -160,7 +191,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 rounded-xl bg-white p-0.5 shadow-md flex items-center justify-center">
-                      <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain" />
+                      <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain pointer-events-none" />
                     </div>
                     <div className="text-left leading-none">
                       <span className="font-black text-sm tracking-tight text-white block">JARRAKPOS</span>
@@ -186,7 +217,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
                   <img
                     src={staff.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
                     alt={staff.name}
-                    className="w-28 h-32 rounded-2xl object-cover border-4 border-white shadow-xl bg-slate-200"
+                    className="w-28 h-32 rounded-2xl object-cover border-4 border-white shadow-xl bg-slate-200 pointer-events-none"
                     crossOrigin="anonymous"
                     onError={(e) => {
                       e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80';
@@ -231,7 +262,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
                     <img 
                       src={qrUrl} 
                       alt="QR Verification" 
-                      className="w-12 h-12 rounded-lg bg-white p-0.5 shadow-sm"
+                      className="w-12 h-12 rounded-lg bg-white p-0.5 shadow-sm pointer-events-none"
                     />
                   )}
                   <div className="text-left">
@@ -268,7 +299,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
               <div className="bg-slate-900 text-white p-4 pt-4 text-center">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <div className="w-6 h-6 rounded-lg bg-white p-0.5 flex items-center justify-center">
-                    <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain" />
+                    <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain pointer-events-none" />
                   </div>
                   <span className="text-xs font-bold tracking-wider text-rose-400 uppercase">JARRAKPOS.COM</span>
                 </div>
@@ -292,7 +323,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
                 </div>
                 <div className="flex items-start gap-1.5">
                   <span className="font-bold text-rose-600">3.</span>
-                  <span>Kepada instansi pemerintah, TNI/Polri, swasta, dan masyarakat dimohon memberikan bantuan & kemudahan informasi.</span>
+                  <span>Kepada instansi pemerintah, TNI/Polri, swasta, dan masyarakat dimohon memberikan bantuan &amp; kemudahan informasi.</span>
                 </div>
                 <div className="flex items-start gap-1.5">
                   <span className="font-bold text-rose-600">4.</span>
@@ -304,7 +335,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
                   <div className="font-bold text-slate-800">Diterbitkan Oleh:</div>
                   <div>PT JARRAK POS MEDIA NUSANTARA</div>
                   <div>SK Kemenkumham: AHU-0012389.AH.01.01</div>
-                  <div>Dewan Pers Terverifikasi Administrasi & Faktual</div>
+                  <div>Dewan Pers Terverifikasi Administrasi &amp; Faktual</div>
                 </div>
               </div>
 
@@ -324,7 +355,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
                 </div>
 
                 {/* Official Stamp */}
-                <div className="w-16 h-16 rounded-full border-2 border-rose-600/80 flex flex-col items-center justify-center text-[7px] font-extrabold text-rose-700 uppercase tracking-tighter p-1 text-center -rotate-12 bg-rose-50/50">
+                <div className="w-16 h-16 rounded-full border-2 border-rose-600/80 flex flex-col items-center justify-center text-[7px] font-extrabold text-rose-700 uppercase tracking-tighter p-1 text-center -rotate-12 bg-rose-50/50 pointer-events-none">
                   <span>PT JARRAK POS</span>
                   <span className="text-slate-900 font-black">REDAKSI</span>
                   <span>BALI - INDONESIA</span>
@@ -339,7 +370,7 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
               <p className="text-slate-300">
-                Narasumber atau instansi dapat memverifikasi keaslian kartu ini secara instan melalui pemindaian QR Code.
+                Tunjukkan QR Code ini kepada narasumber atau instansi untuk memverifikasi keaslian status tugas pers Anda di lapangan.
               </p>
             </div>
             <button

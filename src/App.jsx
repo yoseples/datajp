@@ -84,6 +84,29 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  // Check current user role
+  const isDeveloper = currentUser?.role === SYSTEM_ROLES.DEVELOPER;
+  const isAdmin = currentUser?.role === SYSTEM_ROLES.ADMIN || isDeveloper;
+  const isWartawan = currentUser?.role === SYSTEM_ROLES.WARTAWAN;
+
+  // Protect Wartawan role: Disable Right Click & Print/Save Shortcuts
+  useEffect(() => {
+    if (isWartawan) {
+      const disableContextMenu = (e) => e.preventDefault();
+      const disableKeyShortcuts = (e) => {
+        if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'u')) {
+          e.preventDefault();
+        }
+      };
+      window.addEventListener('contextmenu', disableContextMenu);
+      window.addEventListener('keydown', disableKeyShortcuts);
+      return () => {
+        window.removeEventListener('contextmenu', disableContextMenu);
+        window.removeEventListener('keydown', disableKeyShortcuts);
+      };
+    }
+  }, [isWartawan]);
+
   // Load Data from Supabase or LocalStorage
   const loadDatabase = async () => {
     const config = getSupabaseConfig();
@@ -118,15 +141,9 @@ export default function App() {
     loadDatabase();
   }, []);
 
-  // Check current user role
-  const isDeveloper = currentUser?.role === SYSTEM_ROLES.DEVELOPER;
-  const isAdmin = currentUser?.role === SYSTEM_ROLES.ADMIN || isDeveloper;
-  const isWartawan = currentUser?.role === SYSTEM_ROLES.WARTAWAN;
-
   // Find Wartawan's own profile
   const myStaffProfile = useMemo(() => {
     if (!currentUser) return null;
-    // Match by staffId or by email or by name
     return staffList.find(
       s => (currentUser.staffId && s.id === currentUser.staffId) ||
            (currentUser.email && s.email && s.email.toLowerCase() === currentUser.email.toLowerCase()) ||
@@ -551,6 +568,7 @@ export default function App() {
         isOpen={isIdCardModalOpen}
         onClose={() => setIsIdCardModalOpen(false)}
         onVerify={handleOpenVerifyModal}
+        canDownload={isAdmin} // Only Admin & Developer can download/print
       />
 
       <PublicVerifyModal

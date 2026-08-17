@@ -12,11 +12,12 @@ import {
   Printer, 
   Camera, 
   UploadCloud, 
-  Sparkles,
-  Heart,
-  FileCheck,
-  Building,
-  CheckCircle2
+  Sparkles, 
+  Heart, 
+  FileCheck, 
+  Building, 
+  CheckCircle2,
+  Lock
 } from 'lucide-react';
 
 export default function WartawanPortal({
@@ -43,7 +44,10 @@ export default function WartawanPortal({
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div 
+      className="space-y-6 max-w-5xl mx-auto select-none"
+      onContextMenu={(e) => e.preventDefault()} // Disable Right Click on Wartawan Portal
+    >
       
       {/* Banner Portal Wartawan */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 p-6 sm:p-8 text-white shadow-xl border border-slate-800">
@@ -58,7 +62,7 @@ export default function WartawanPortal({
             <img
               src={staff.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
               alt={staff.name}
-              className="w-28 h-32 sm:w-36 sm:h-40 rounded-3xl object-cover border-4 border-rose-600 shadow-2xl group-hover:scale-105 transition-all bg-slate-800"
+              className="w-28 h-32 sm:w-36 sm:h-40 rounded-3xl object-cover border-4 border-rose-600 shadow-2xl group-hover:scale-105 transition-all bg-slate-800 pointer-events-none"
               onError={(e) => {
                 e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80';
               }}
@@ -96,7 +100,7 @@ export default function WartawanPortal({
             </div>
 
             <p className="text-xs text-slate-300 pt-2 leading-relaxed max-w-xl">
-              Selamat datang di portal keanggotaan pers Anda. Di sini Anda dapat mencetak Kartu Pers (KTA) Digital, mengecek QR Code verifikasi publik di lapangan, serta memperbarui pas foto dan data kontak Anda.
+              Selamat datang di portal keanggotaan pers Anda. Tampilkan KTA Digital Anda kepada narasumber atau periksa verifikasi barcode resmi Dewan Pers.
             </p>
           </div>
 
@@ -109,7 +113,7 @@ export default function WartawanPortal({
             className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-xl shadow-lg shadow-rose-900/40 transition-all active:scale-95"
           >
             <CreditCard className="w-4 h-4" />
-            <span>Buka &amp; Unduh KTA Digital Resmi</span>
+            <span>Tampilkan KTA Digital Saya</span>
           </button>
 
           <button
