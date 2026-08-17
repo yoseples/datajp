@@ -12,6 +12,12 @@ import {
   deleteStaffFromSupabase,
   syncAllStaffToSupabase
 } from './utils/supabaseClient';
+import { 
+  MEDIA_PLATFORMS, 
+  INITIAL_JARRAKPOSTV_STAFF, 
+  INITIAL_JARRAKPODCAST_STAFF 
+} from './data/mediaPlatforms';
+import { INITIAL_STAFF } from './data/initialData';
 import Navbar from './components/Navbar';
 import DashboardStats from './components/DashboardStats';
 import StaffFilters from './components/StaffFilters';
@@ -24,6 +30,7 @@ import IdCardModal from './components/IdCardModal';
 import PublicVerifyModal from './components/PublicVerifyModal';
 import SupabaseModal from './components/SupabaseModal';
 import KtaExpiryModal from './components/KtaExpiryModal';
+import MediaHubSelector from './components/MediaHubSelector';
 import LoginPage, { SYSTEM_ROLES } from './components/LoginPage';
 import WartawanPortal from './components/WartawanPortal';
 import ScrollToTop from './components/ScrollToTop';
@@ -31,16 +38,21 @@ import logoJarrakpos from './assets/logo-jarrakpos.png';
 import { 
   Building2, 
   Globe, 
+  Tv,
+  Mic,
   ShieldCheck, 
   Users, 
   Sparkles, 
   Database,
   Cloud,
   AlertCircle,
-  Plus
+  Plus,
+  ArrowLeft,
+  LayoutGrid
 } from 'lucide-react';
 
 const USER_STORAGE_KEY = 'JARRAKPOS_AUTH_USER_V1';
+const SELECTED_PLATFORM_KEY = 'JARRAKPOS_ACTIVE_PLATFORM_V1';
 
 export default function App() {
   // Authentication State
@@ -53,8 +65,36 @@ export default function App() {
     }
   });
 
-  // Master State
-  const [staffList, setStaffList] = useState([]);
+  // Active Media Platform State: 'hub' | 'jarrakpos' | 'jarrakpostv' | 'jarrakpodcast'
+  const [currentPlatform, setCurrentPlatform] = useState(() => {
+    return localStorage.getItem(SELECTED_PLATFORM_KEY) || 'hub';
+  });
+
+  // Master State per platform
+  const [platformData, setPlatformData] = useState(() => {
+    // Load each platform's stored staff
+    const loadPlatform = (key, initial) => {
+      try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : initial;
+      } catch {
+        return initial;
+      }
+    };
+
+    return {
+      jarrakpos: getStoredStaff(),
+      jarrakpostv: loadPlatform(MEDIA_PLATFORMS.JARRAKPOSTV.storageKey, INITIAL_JARRAKPOSTV_STAFF),
+      jarrakpodcast: loadPlatform(MEDIA_PLATFORMS.JARRAKPODCAST.storageKey, INITIAL_JARRAKPODCAST_STAFF)
+    };
+  });
+
+  const activeStaffList = useMemo(() => {
+    if (currentPlatform === 'jarrakpostv') return platformData.jarrakpostv;
+    if (currentPlatform === 'jarrakpodcast') return platformData.jarrakpodcast;
+    return platformData.jarrakpos;
+  }, [platformData, currentPlatform]);
+
   const [activeView, setActiveView] = useState('orgchart'); // 'orgchart' | 'table' | 'grid'
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [isLoadingCloud, setIsLoadingCloud] = useState(false);
@@ -144,78 +184,56 @@ export default function App() {
     }
   }, [isWartawan]);
 
-  // Load Data from Supabase or LocalStorage
-  const loadDatabase = async () => {
-    const config = getSupabaseConfig();
-    if (config.url && config.key) {
-      setIsLoadingCloud(true);
-      try {
-        const cloudData = await fetchStaffFromSupabase();
-        if (cloudData && cloudData.length > 0) {
-          setStaffList(cloudData);
-          saveStoredStaff(cloudData);
-          setIsSupabaseActive(true);
-        } else {
-          const local = getStoredStaff();
-          setStaffList(local);
-          setIsSupabaseActive(true);
-          await syncAllStaffToSupabase(local);
-        }
-      } catch (err) {
-        console.warn('Supabase fetch failed, falling back to local:', err);
-        setIsSupabaseActive(false);
-        setStaffList(getStoredStaff());
-      } finally {
-        setIsLoadingCloud(false);
-      }
-    } else {
-      setIsSupabaseActive(false);
-      setStaffList(getStoredStaff());
-    }
+  // Handle Platform Switch
+  const handleSelectPlatform = (platformId) => {
+    setCurrentPlatform(platformId);
+    localStorage.setItem(SELECTED_PLATFORM_KEY, platformId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast(`Beralih ke Portal Redaksi: ${MEDIA_PLATFORMS[platformId.toUpperCase()]?.name}`);
   };
-
-  useEffect(() => {
-    loadDatabase();
-  }, []);
 
   // Find Wartawan's own profile
   const myStaffProfile = useMemo(() => {
     if (!currentUser) return null;
-    return staffList.find(
+    return activeStaffList.find(
       s => (currentUser.staffId && s.id === currentUser.staffId) ||
            (currentUser.email && s.email && s.email.toLowerCase() === currentUser.email.toLowerCase()) ||
            (currentUser.name && s.name.toLowerCase().includes(currentUser.name.toLowerCase()))
-    ) || staffList[0];
-  }, [currentUser, staffList]);
+    ) || activeStaffList[0];
+  }, [currentUser, activeStaffList]);
 
-  // Expiring KTA list (within next 12-24 months)
+  // Expiring KTA list for active platform
   const expiringStaffList = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    return staffList.filter(s => {
+    return activeStaffList.filter(s => {
       if (!s.ktaExpiry) return false;
       const expYear = parseInt(s.ktaExpiry.slice(0, 4));
       return expYear <= currentYear + 1;
     });
-  }, [staffList]);
+  }, [activeStaffList]);
 
   // Auth Handlers
   const handleLoginSuccess = (user, remember) => {
     setCurrentUser(user);
+    setCurrentPlatform('hub'); // Take user to Media Hub Selector after login
+    localStorage.setItem(SELECTED_PLATFORM_KEY, 'hub');
     if (remember) {
       localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
     }
     confetti({
-      particleCount: 70,
+      particleCount: 80,
       spread: 70,
       origin: { y: 0.6 }
     });
-    showToast(`Selamat datang, ${user.name}! (Role: ${user.role})`);
+    showToast(`Selamat datang, ${user.name}! Silakan pilih platform media.`);
   };
 
   const handleLogout = () => {
     if (confirm('Apakah Anda ingin keluar dari sistem Bank Data Jarrakpos?')) {
       setCurrentUser(null);
+      setCurrentPlatform('hub');
       localStorage.removeItem(USER_STORAGE_KEY);
+      localStorage.removeItem(SELECTED_PLATFORM_KEY);
       returnToHome();
       showToast('Anda telah keluar dari sistem.', 'info');
     }
@@ -223,7 +241,7 @@ export default function App() {
 
   // Filter logic for Admin & Developer
   const filteredStaff = useMemo(() => {
-    return staffList.filter((staff) => {
+    return activeStaffList.filter((staff) => {
       if (selectedDivision !== 'Semua Divisi' && staff.division !== selectedDivision) return false;
       if (selectedBureau !== 'Semua Biro' && staff.bureau !== selectedBureau) return false;
       if (selectedUkw !== 'Semua UKW' && staff.ukwLevel !== selectedUkw) return false;
@@ -239,18 +257,20 @@ export default function App() {
       }
       return true;
     });
-  }, [staffList, selectedDivision, selectedBureau, selectedUkw, selectedStatus, searchQuery]);
+  }, [activeStaffList, selectedDivision, selectedBureau, selectedUkw, selectedStatus, searchQuery]);
 
-  // Handlers (Hybrid Supabase + Local)
+  // Handlers per platform
   const handleSaveStaff = async (staffData) => {
+    const pKey = currentPlatform === 'jarrakpostv' ? 'jarrakpostv' : currentPlatform === 'jarrakpodcast' ? 'jarrakpodcast' : 'jarrakpos';
+    const list = platformData[pKey];
     let updated;
-    const exists = staffList.some(s => s.id === staffData.id);
+    const exists = list.some(s => s.id === staffData.id);
     
     if (exists) {
-      updated = staffList.map(s => s.id === staffData.id ? staffData : s);
+      updated = list.map(s => s.id === staffData.id ? staffData : s);
       showToast(`Data "${staffData.name}" berhasil diperbarui!`);
     } else {
-      updated = [staffData, ...staffList];
+      updated = [staffData, ...list];
       confetti({
         particleCount: 80,
         spread: 60,
@@ -259,10 +279,13 @@ export default function App() {
       showToast(`Anggota redaksi "${staffData.name}" berhasil ditambahkan!`);
     }
     
-    setStaffList(updated);
-    saveStoredStaff(updated);
+    setPlatformData(prev => ({ ...prev, [pKey]: updated }));
+    
+    // Save to respective localStorage
+    const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+    localStorage.setItem(storageKey, JSON.stringify(updated));
 
-    if (isSupabaseActive) {
+    if (pKey === 'jarrakpos' && isSupabaseActive) {
       try {
         await saveStaffToSupabase(staffData);
       } catch (err) {
@@ -292,21 +315,17 @@ export default function App() {
       return;
     }
 
-    const target = staffList.find(s => s.id === id);
+    const pKey = currentPlatform === 'jarrakpostv' ? 'jarrakpostv' : currentPlatform === 'jarrakpodcast' ? 'jarrakpodcast' : 'jarrakpos';
+    const list = platformData[pKey];
+    const target = list.find(s => s.id === id);
     if (!target) return;
-    if (confirm(`Apakah Anda yakin ingin menghapus "${target.name}" dari database redaksi?`)) {
-      const updated = staffList.filter(s => s.id !== id);
-      setStaffList(updated);
-      saveStoredStaff(updated);
-      showToast(`"${target.name}" telah dihapus dari database.`, 'info');
-
-      if (isSupabaseActive) {
-        try {
-          await deleteStaffFromSupabase(id);
-        } catch (err) {
-          console.error('Failed to sync delete to Supabase:', err);
-        }
-      }
+    if (confirm(`Apakah Anda yakin ingin menghapus "${target.name}" dari database redaksi ${MEDIA_PLATFORMS[pKey.toUpperCase()]?.name}?`)) {
+      const updated = list.filter(s => s.id !== id);
+      setPlatformData(prev => ({ ...prev, [pKey]: updated }));
+      
+      const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      showToast(`"${target.name}" telah dihapus.`, 'info');
     }
   };
 
@@ -315,12 +334,15 @@ export default function App() {
       alert('Hanya Developer yang dapat mereset database master!');
       return;
     }
-    const freshData = resetToInitialStaff();
-    setStaffList(freshData);
-    if (isSupabaseActive) {
-      syncAllStaffToSupabase(freshData).catch(console.error);
-    }
-    showToast('Database berhasil direset ke data resmi Jarrakpos.');
+    const pKey = currentPlatform === 'jarrakpostv' ? 'jarrakpostv' : currentPlatform === 'jarrakpodcast' ? 'jarrakpodcast' : 'jarrakpos';
+    let freshData = INITIAL_STAFF;
+    if (pKey === 'jarrakpostv') freshData = INITIAL_JARRAKPOSTV_STAFF;
+    if (pKey === 'jarrakpodcast') freshData = INITIAL_JARRAKPODCAST_STAFF;
+
+    setPlatformData(prev => ({ ...prev, [pKey]: freshData }));
+    const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+    localStorage.setItem(storageKey, JSON.stringify(freshData));
+    showToast(`Database ${MEDIA_PLATFORMS[pKey.toUpperCase()]?.name} berhasil direset.`);
   };
 
   const handleImportData = (newData) => {
@@ -328,12 +350,11 @@ export default function App() {
       alert('Hanya Developer yang dapat mengimpor database JSON mentah!');
       return;
     }
-    setStaffList(newData);
-    saveStoredStaff(newData);
-    if (isSupabaseActive) {
-      syncAllStaffToSupabase(newData).catch(console.error);
-    }
-    showToast(`Berhasil mengimpor ${newData.length} data personil redaksi!`);
+    const pKey = currentPlatform === 'jarrakpostv' ? 'jarrakpostv' : currentPlatform === 'jarrakpodcast' ? 'jarrakpodcast' : 'jarrakpos';
+    setPlatformData(prev => ({ ...prev, [pKey]: newData }));
+    const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+    localStorage.setItem(storageKey, JSON.stringify(newData));
+    showToast(`Berhasil mengimpor ${newData.length} data personil!`);
   };
 
   const handleOpenAddModal = () => {
@@ -355,7 +376,7 @@ export default function App() {
   };
 
   const handleOpenVerifyModal = (staff = null) => {
-    openModalWithHistory(setIsVerifyModalOpen, staff || myStaffProfile || staffList[0], setSelectedStaffForVerify, 'verify-qr');
+    openModalWithHistory(setIsVerifyModalOpen, staff || myStaffProfile || activeStaffList[0], setSelectedStaffForVerify, 'verify-qr');
   };
 
   const handleOpenSupabaseModal = () => {
@@ -366,10 +387,28 @@ export default function App() {
     openModalWithHistory(setIsExpiryModalOpen, null, null, 'kta-expiry');
   };
 
-  // If user is not logged in, show LoginPage
+  // 1. IF NOT LOGGED IN -> Show LoginPage
   if (!currentUser) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} allStaff={staffList} />;
+    return <LoginPage onLoginSuccess={handleLoginSuccess} allStaff={activeStaffList} />;
   }
+
+  // 2. IF ON MEDIA HUB -> Show MediaHubSelector (Selection of Jarrakpos.com, JarrakposTV, Jarrak Podcast)
+  if (currentPlatform === 'hub') {
+    return (
+      <MediaHubSelector
+        currentUser={currentUser}
+        onSelectPlatform={handleSelectPlatform}
+        onLogout={handleLogout}
+        platformStaffCounts={{
+          jarrakpos: platformData.jarrakpos.length,
+          jarrakpostv: platformData.jarrakpostv.length,
+          jarrakpodcast: platformData.jarrakpodcast.length
+        }}
+      />
+    );
+  }
+
+  const activePlatformInfo = MEDIA_PLATFORMS[currentPlatform.toUpperCase()] || MEDIA_PLATFORMS.JARRAKPOS;
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col justify-between">
@@ -384,11 +423,14 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Navbar */}
+      {/* Main Navbar with Media Platform Switcher */}
       <Navbar
         currentUser={currentUser}
+        currentPlatform={currentPlatform}
+        onSwitchPlatform={handleSelectPlatform}
+        onOpenHub={() => setCurrentPlatform('hub')}
         onLogout={handleLogout}
-        staffList={staffList}
+        staffList={activeStaffList}
         onOpenAddModal={handleOpenAddModal}
         onResetData={handleResetData}
         onImportData={handleImportData}
@@ -420,16 +462,25 @@ export default function App() {
           /* CASE 2: ROLE ADMIN & DEVELOPER -> FULL ACCESS KE BAGAN, TABEL & KARTU */
           /* ============================================================================== */
           <>
-            {/* Hero Section Banner */}
+            {/* Hero Section Banner with Platform Switcher Pill */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 p-6 sm:p-8 text-white shadow-xl mb-8 border border-slate-800">
               <div className="relative z-10 max-w-3xl">
+                
                 <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <button
+                    onClick={() => setCurrentPlatform('hub')}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-rose-300 text-xs font-bold uppercase tracking-wider transition-all"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Ganti Platform Media</span>
+                  </button>
+
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Portal {currentUser?.role || 'Admin'} Jarrakpos
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    {activePlatformInfo.badge}
                   </div>
                   
-                  {isDeveloper && (
+                  {isDeveloper && currentPlatform === 'jarrakpos' && (
                     <div 
                       onClick={handleOpenSupabaseModal}
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider cursor-pointer transition-all ${
@@ -444,11 +495,11 @@ export default function App() {
                   )}
                 </div>
 
-                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-                  Database Dewan Redaksi & Bank Data Wartawan
+                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight flex items-center gap-3">
+                  <span>{activePlatformInfo.name}</span>
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-                  Pusat inventarisasi resmi jajaran pimpinan redaksi, dewan penasehat, redaktur, wartawan biro daerah, serta sertifikasi kompetensi pers terintegrasi <strong>jarrakpos.com</strong>.
+                  {activePlatformInfo.description}
                 </p>
               </div>
 
@@ -458,7 +509,7 @@ export default function App() {
                   className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-rose-900/40 transition-all active:scale-95"
                 >
                   <Plus className="w-4 h-4" />
-                  Tambah Personil Redaksi
+                  Tambah Redaksi {activePlatformInfo.name}
                 </button>
                 <button
                   onClick={() => handleOpenVerifyModal(null)}
@@ -467,24 +518,22 @@ export default function App() {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   Verifikasi QR Kartu Pers
                 </button>
-                {isDeveloper && (
-                  <button
-                    onClick={handleOpenSupabaseModal}
-                    className="flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-emerald-700/60 transition-all"
-                  >
-                    <Database className="w-4 h-4 text-emerald-400" />
-                    Kelola Cloud Supabase
-                  </button>
-                )}
+                <button
+                  onClick={() => setCurrentPlatform('hub')}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-slate-700 transition-all"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span>Pilih Platform Lain</span>
+                </button>
               </div>
 
-              {/* Decorative Red Glow */}
+              {/* Decorative Glow */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-rose-600/20 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
             </div>
 
-            {/* Dashboard Metric Statistics with Clickable Expiry Card */}
+            {/* Dashboard Metric Statistics */}
             <DashboardStats 
-              staffList={staffList} 
+              staffList={activeStaffList} 
               onOpenExpiryModal={handleOpenExpiryModal}
             />
 
@@ -505,7 +554,7 @@ export default function App() {
               totalResults={filteredStaff.length}
             />
 
-            {/* Dynamic Main View for Admin & Developer */}
+            {/* Dynamic Main View */}
             {filteredStaff.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/90 shadow-sm max-w-lg mx-auto my-10">
                 <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4">
@@ -634,11 +683,12 @@ export default function App() {
         onClose={returnToHome}
         onVerify={handleOpenVerifyModal}
         canDownload={isAdmin}
+        currentPlatform={currentPlatform}
       />
 
       <PublicVerifyModal
         staff={selectedStaffForVerify}
-        allStaff={staffList}
+        allStaff={activeStaffList}
         isOpen={isVerifyModalOpen}
         onClose={returnToHome}
         onSelectStaff={(s) => setSelectedStaffForVerify(s)}
@@ -657,7 +707,7 @@ export default function App() {
         <SupabaseModal
           isOpen={isSupabaseModalOpen}
           onClose={returnToHome}
-          staffList={staffList}
+          staffList={activeStaffList}
           onSupabaseConfigured={loadDatabase}
         />
       )}

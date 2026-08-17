@@ -17,19 +17,23 @@ import {
   Loader2
 } from 'lucide-react';
 import logoJarrakpos from '../assets/logo-jarrakpos.png';
+import { MEDIA_PLATFORMS } from '../data/mediaPlatforms';
 
 export default function IdCardModal({ 
   staff, 
   isOpen, 
   onClose, 
   onVerify,
-  canDownload = true
+  canDownload = true,
+  currentPlatform = 'jarrakpos'
 }) {
   const [qrUrl, setQrUrl] = useState('');
   const [activeSide, setActiveSide] = useState('front'); // 'front' | 'back'
   const [isExporting, setIsExporting] = useState(false);
   const cardFrontRef = useRef(null);
   const cardBackRef = useRef(null);
+
+  const platformInfo = MEDIA_PLATFORMS[currentPlatform.toUpperCase()] || MEDIA_PLATFORMS.JARRAKPOS;
 
   useEffect(() => {
     if (staff) {
@@ -259,19 +263,19 @@ export default function IdCardModal({
                     </div>
                     <div className="text-left leading-tight">
                       <span className="font-black text-sm tracking-tight text-white block">
-                        JARRAK<span style={{ color: '#f43f5e' }}>POS.COM</span>
+                        {platformInfo.name}
                       </span>
                       <span className="text-[7.5px] font-bold text-slate-300 tracking-wider uppercase block">
-                        BERSAMA MEMBANGUN BANGSA
+                        {platformInfo.tagline}
                       </span>
                     </div>
                   </div>
 
                   <div 
                     className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-white"
-                    style={{ background: '#e11d48', border: '1px solid rgba(255,255,255,0.4)' }}
+                    style={{ background: platformInfo.accentColor || '#e11d48', border: '1px solid rgba(255,255,255,0.4)' }}
                   >
-                    PERS
+                    {currentPlatform === 'jarrakpostv' ? 'TV' : currentPlatform === 'jarrakpodcast' ? 'PODCAST' : 'PERS'}
                   </div>
                 </div>
 
