@@ -25,6 +25,7 @@ import PublicVerifyModal from './components/PublicVerifyModal';
 import SupabaseModal from './components/SupabaseModal';
 import LoginPage, { SYSTEM_ROLES } from './components/LoginPage';
 import WartawanPortal from './components/WartawanPortal';
+import ScrollToTop from './components/ScrollToTop';
 import logoJarrakpos from './assets/logo-jarrakpos.png';
 import { 
   Building2, 
@@ -617,6 +618,9 @@ export default function App() {
           onSupabaseConfigured={loadDatabase}
         />
       )}
+
+      {/* Floating Scroll to Top Button */}
+      <ScrollToTop />
 
     </div>
   );
