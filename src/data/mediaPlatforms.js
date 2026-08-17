@@ -3,6 +3,7 @@ import { INITIAL_STAFF } from './initialData';
 export const MEDIA_PLATFORMS = {
   JARRAKPOS: {
     id: 'jarrakpos',
+    routeSlug: 'jarrakpos.com',
     name: 'JARRAKPOS.COM',
     title: 'Portal Berita Siber & Jaringan Biro Nasional',
     tagline: 'Bersama Membangun Bangsa',
@@ -16,6 +17,7 @@ export const MEDIA_PLATFORMS = {
   },
   JARRAKPOSTV: {
     id: 'jarrakpostv',
+    routeSlug: 'jarrakpostv',
     name: 'JARRAKPOS TV',
     title: 'Media Penyiaran Digital, Streaming & Visual',
     tagline: 'Mata Indonesia Mengabarkan',
@@ -29,6 +31,7 @@ export const MEDIA_PLATFORMS = {
   },
   JARRAKPODCAST: {
     id: 'jarrakpodcast',
+    routeSlug: 'jarrakpodcast',
     name: 'JARRAK PODCAST',
     title: 'Studio Talkshow, Opini & Investigasi Audio Visual',
     tagline: 'Suara Kritis & Inspirasi Nusantara',

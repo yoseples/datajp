@@ -54,6 +54,54 @@ import {
 const USER_STORAGE_KEY = 'JARRAKPOS_AUTH_USER_V1';
 const SELECTED_PLATFORM_KEY = 'JARRAKPOS_ACTIVE_PLATFORM_V1';
 
+// Helper: Parse platform from current URL path, hash, or SPA redirect cache
+const getPlatformFromUrl = () => {
+  try {
+    const savedRedirect = sessionStorage.getItem('SPA_REDIRECT_URL');
+    if (savedRedirect) {
+      sessionStorage.removeItem('SPA_REDIRECT_URL');
+      const lower = savedRedirect.toLowerCase();
+      if (lower.includes('jarrakpos.com')) return 'jarrakpos';
+      if (lower.includes('jarrakpostv')) return 'jarrakpostv';
+      if (lower.includes('jarrakpodcast')) return 'jarrakpodcast';
+    }
+
+    const path = (window.location.pathname + ' ' + window.location.hash).toLowerCase();
+    if (path.includes('jarrakpos.com')) return 'jarrakpos';
+    if (path.includes('jarrakpostv')) return 'jarrakpostv';
+    if (path.includes('jarrakpodcast')) return 'jarrakpodcast';
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+// Helper: Get base path (handles GitHub Pages /datajp/ or root /)
+const getAppBasePath = () => {
+  return window.location.pathname.includes('/datajp') ? '/datajp/' : '/';
+};
+
+// Helper: Update browser URL dynamically without reload
+const updateBrowserUrl = (platformId, push = true) => {
+  try {
+    const base = getAppBasePath();
+    let newPath = base;
+    if (platformId === 'jarrakpos') newPath = `${base}jarrakpos.com`;
+    else if (platformId === 'jarrakpostv') newPath = `${base}jarrakpostv`;
+    else if (platformId === 'jarrakpodcast') newPath = `${base}jarrakpodcast`;
+    
+    if (window.location.pathname !== newPath) {
+      if (push) {
+        window.history.pushState({ platform: platformId }, '', newPath);
+      } else {
+        window.history.replaceState({ platform: platformId }, '', newPath);
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to update URL:', e);
+  }
+};
+
 export default function App() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
@@ -67,12 +115,21 @@ export default function App() {
 
   // Active Media Platform State: 'hub' | 'jarrakpos' | 'jarrakpostv' | 'jarrakpodcast'
   const [currentPlatform, setCurrentPlatform] = useState(() => {
+    const fromUrl = getPlatformFromUrl();
+    if (fromUrl) return fromUrl;
     try {
       return localStorage.getItem(SELECTED_PLATFORM_KEY) || 'hub';
     } catch {
       return 'hub';
     }
   });
+
+  // Sync URL on initial mount
+  useEffect(() => {
+    if (currentUser && currentPlatform !== 'hub') {
+      updateBrowserUrl(currentPlatform, false);
+    }
+  }, []);
 
   // Master State per platform with safe initializers
   const [platformData, setPlatformData] = useState(() => {
@@ -159,15 +216,21 @@ export default function App() {
     } catch {}
   };
 
-  // Listen to Browser Back Button (popstate event) -> Return to Home
+  // Listen to Browser Back/Forward Button (popstate event) -> Sync Platform & Modals
   useEffect(() => {
     const handlePopState = (e) => {
+      const fromUrl = getPlatformFromUrl();
+      if (fromUrl && fromUrl !== currentPlatform) {
+        setCurrentPlatform(fromUrl);
+      } else if (!fromUrl && currentPlatform !== 'hub') {
+        setCurrentPlatform('hub');
+      }
       returnToHome();
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [returnToHome]);
+  }, [currentPlatform, returnToHome]);
 
   // Check current user role
   const isDeveloper = currentUser?.role === SYSTEM_ROLES.DEVELOPER;
@@ -192,14 +255,24 @@ export default function App() {
     }
   }, [isWartawan]);
 
-  // Handle Platform Switch
+  // Handle Platform Switch with Dynamic URL Route
   const handleSelectPlatform = (platformId) => {
     setCurrentPlatform(platformId);
+    updateBrowserUrl(platformId, true);
     try {
       localStorage.setItem(SELECTED_PLATFORM_KEY, platformId);
     } catch {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast(`Beralih ke Portal Redaksi: ${MEDIA_PLATFORMS[platformId.toUpperCase()]?.name || platformId}`);
+  };
+
+  const handleOpenHub = () => {
+    setCurrentPlatform('hub');
+    updateBrowserUrl('hub', true);
+    try {
+      localStorage.setItem(SELECTED_PLATFORM_KEY, 'hub');
+    } catch {}
+    returnToHome();
   };
 
   // Find Wartawan's own profile
@@ -227,9 +300,12 @@ export default function App() {
   // Auth Handlers
   const handleLoginSuccess = (user, remember) => {
     setCurrentUser(user);
-    setCurrentPlatform('hub');
+    const fromUrl = getPlatformFromUrl();
+    const targetPlatform = fromUrl || 'hub';
+    setCurrentPlatform(targetPlatform);
+    updateBrowserUrl(targetPlatform, false);
     try {
-      localStorage.setItem(SELECTED_PLATFORM_KEY, 'hub');
+      localStorage.setItem(SELECTED_PLATFORM_KEY, targetPlatform);
       if (remember) {
         localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
       }
@@ -239,13 +315,14 @@ export default function App() {
       spread: 70,
       origin: { y: 0.6 }
     });
-    showToast(`Selamat datang, ${user.name}! Silakan pilih platform media.`);
+    showToast(`Selamat datang, ${user.name}!`);
   };
 
   const handleLogout = () => {
     if (confirm('Apakah Anda ingin keluar dari sistem Bank Data Jarrakpos?')) {
       setCurrentUser(null);
       setCurrentPlatform('hub');
+      updateBrowserUrl('hub', false);
       try {
         localStorage.removeItem(USER_STORAGE_KEY);
         localStorage.removeItem(SELECTED_PLATFORM_KEY);
@@ -452,7 +529,7 @@ export default function App() {
         currentUser={currentUser}
         currentPlatform={currentPlatform}
         onSwitchPlatform={handleSelectPlatform}
-        onOpenHub={() => setCurrentPlatform('hub')}
+        onOpenHub={handleOpenHub}
         onLogout={handleLogout}
         staffList={activeStaffList || []}
         onOpenAddModal={handleOpenAddModal}
@@ -492,7 +569,7 @@ export default function App() {
                 
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <button
-                    onClick={() => setCurrentPlatform('hub')}
+                    onClick={handleOpenHub}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-rose-300 text-xs font-bold uppercase tracking-wider transition-all"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
@@ -543,7 +620,7 @@ export default function App() {
                   Verifikasi QR Kartu Pers
                 </button>
                 <button
-                  onClick={() => setCurrentPlatform('hub')}
+                  onClick={handleOpenHub}
                   className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-slate-700 transition-all"
                 >
                   <LayoutGrid className="w-4 h-4" />
