@@ -569,7 +569,7 @@ export default function App() {
 
             <div className="text-xs text-slate-500 text-center md:text-right">
               <p>© {new Date().getFullYear()} Jarrakpos.com. All Rights Reserved.</p>
-              <p className="mt-0.5">Sistem Database Dewan Redaksi, Wartawan & Bank Data Karyawan.</p>
+              <p className="mt-0.5">Sistem Database Redaksi</p>
             </div>
 
           </div>
