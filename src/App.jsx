@@ -51,7 +51,7 @@ export default function App() {
 
   // Master State
   const [staffList, setStaffList] = useState([]);
-  const [activeView, setActiveView] = useState('grid'); // 'grid' | 'table' | 'orgchart'
+  const [activeView, setActiveView] = useState('orgchart'); // 'orgchart' | 'table' | 'grid'
   const [isSupabaseActive, setIsSupabaseActive] = useState(false);
   const [isLoadingCloud, setIsLoadingCloud] = useState(false);
 

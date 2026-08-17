@@ -30,45 +30,48 @@ export default function StaffFilters({
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 mb-6">
       
-      {/* Top Bar: View Switcher + Search (Mobile) + Quick Summary */}
+      {/* Top Bar: View Switcher (OrgChart First, Table Second, Grid Third) */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
         
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start">
+        <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start overflow-x-auto">
+          {/* 1. Bagan Struktur Redaksi (Pertama) */}
           <button
-            onClick={() => setActiveView('grid')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeView === 'grid'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-800'
+            onClick={() => setActiveView('orgchart')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+              activeView === 'orgchart'
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <LayoutGrid className="w-3.5 h-3.5 text-rose-600" />
-            Kartu Grid
+            <GitFork className="w-3.5 h-3.5" />
+            1. Bagan Struktur Redaksi
           </button>
 
+          {/* 2. Tabel Data */}
           <button
             onClick={() => setActiveView('table')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               activeView === 'table'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Table className="w-3.5 h-3.5 text-blue-600" />
-            Tabel Data
+            2. Tabel Data
           </button>
 
+          {/* 3. Kartu Grid (Posisi Akhir) */}
           <button
-            onClick={() => setActiveView('orgchart')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              activeView === 'orgchart'
+            onClick={() => setActiveView('grid')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+              activeView === 'grid'
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <GitFork className="w-3.5 h-3.5 text-amber-600" />
-            Bagan Struktur Redaksi
+            <LayoutGrid className="w-3.5 h-3.5 text-slate-600" />
+            3. Kartu Grid
           </button>
         </div>
 
