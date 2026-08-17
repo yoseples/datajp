@@ -24,9 +24,25 @@ export default function StaffDetailModal({
   onClose, 
   onOpenIdCard, 
   onOpenVerify, 
-  onEdit 
+  onEdit,
+  allPlatformData = {}
 }) {
   if (!isOpen || !staff) return null;
+
+  // Find concurrent roles across all 3 platforms by matching name
+  const concurrentRoles = [];
+  if (allPlatformData.jarrakpos) {
+    const matched = allPlatformData.jarrakpos.find(s => s.name?.toLowerCase() === staff.name?.toLowerCase());
+    if (matched) concurrentRoles.push({ platform: 'JARRAKPOS.COM', role: matched.role, bureau: matched.bureau, badge: 'Siber' });
+  }
+  if (allPlatformData.jarrakpostv) {
+    const matched = allPlatformData.jarrakpostv.find(s => s.name?.toLowerCase() === staff.name?.toLowerCase());
+    if (matched) concurrentRoles.push({ platform: 'JARRAKPOS TV', role: matched.role, bureau: matched.bureau, badge: 'TV' });
+  }
+  if (allPlatformData.jarrakpodcast) {
+    const matched = allPlatformData.jarrakpodcast.find(s => s.name?.toLowerCase() === staff.name?.toLowerCase());
+    if (matched) concurrentRoles.push({ platform: 'JARRAK PODCAST', role: matched.role, bureau: matched.bureau, badge: 'Podcast' });
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
@@ -140,6 +156,37 @@ export default function StaffDetailModal({
               </div>
             )}
           </div>
+
+          {/* Concurrent Roles Across Media Group */}
+          {concurrentRoles.length > 1 && (
+            <div className="bg-gradient-to-r from-slate-900 to-rose-950 text-white rounded-2xl p-4 border border-slate-800 shadow-md">
+              <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-800">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Portofolio Jabatan Lintas Media Group ({concurrentRoles.length} Platform)
+                </span>
+                <span className="text-[10px] bg-rose-600/60 px-2 py-0.5 rounded-full font-bold text-white">
+                  Multi-Role
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                {concurrentRoles.map((item, idx) => (
+                  <div key={idx} className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                    <span className="text-[9px] font-bold text-rose-400 uppercase block font-mono">
+                      {item.platform}
+                    </span>
+                    <strong className="text-xs text-white block mt-0.5 leading-snug">
+                      {item.role}
+                    </strong>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">
+                      {item.bureau}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Section: Penempatan & Kontak */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

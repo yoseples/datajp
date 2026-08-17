@@ -675,6 +675,7 @@ export default function App() {
         onOpenIdCard={handleOpenIdCardModal}
         onOpenVerify={handleOpenVerifyModal}
         onEdit={handleOpenEditModal}
+        allPlatformData={platformData}
       />
 
       <IdCardModal
