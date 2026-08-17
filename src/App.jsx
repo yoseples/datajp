@@ -23,6 +23,7 @@ import StaffDetailModal from './components/StaffDetailModal';
 import IdCardModal from './components/IdCardModal';
 import PublicVerifyModal from './components/PublicVerifyModal';
 import SupabaseModal from './components/SupabaseModal';
+import KtaExpiryModal from './components/KtaExpiryModal';
 import LoginPage, { SYSTEM_ROLES } from './components/LoginPage';
 import WartawanPortal from './components/WartawanPortal';
 import ScrollToTop from './components/ScrollToTop';
@@ -79,6 +80,7 @@ export default function App() {
   const [selectedStaffForVerify, setSelectedStaffForVerify] = useState(null);
 
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
+  const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg, type = 'success') => {
@@ -93,6 +95,7 @@ export default function App() {
     setIsIdCardModalOpen(false);
     setIsVerifyModalOpen(false);
     setIsSupabaseModalOpen(false);
+    setIsExpiryModalOpen(false);
     setSelectedStaffForDetail(null);
     setSelectedStaffForIdCard(null);
     setSelectedStaffForVerify(null);
@@ -111,7 +114,6 @@ export default function App() {
   // Listen to Browser Back Button (popstate event) -> Return to Home
   useEffect(() => {
     const handlePopState = (e) => {
-      // When back is pressed on browser or smartphone, close all active modals and return to home
       returnToHome();
     };
 
@@ -186,6 +188,16 @@ export default function App() {
     ) || staffList[0];
   }, [currentUser, staffList]);
 
+  // Expiring KTA list (within next 12-24 months)
+  const expiringStaffList = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return staffList.filter(s => {
+      if (!s.ktaExpiry) return false;
+      const expYear = parseInt(s.ktaExpiry.slice(0, 4));
+      return expYear <= currentYear + 1;
+    });
+  }, [staffList]);
+
   // Auth Handlers
   const handleLoginSuccess = (user, remember) => {
     setCurrentUser(user);
@@ -257,6 +269,21 @@ export default function App() {
         console.error('Failed to sync save to Supabase:', err);
       }
     }
+  };
+
+  const handleRenewKta = async (staff) => {
+    const updatedStaff = {
+      ...staff,
+      ktaExpiry: '2029-12-31',
+      status: 'Aktif'
+    };
+    await handleSaveStaff(updatedStaff);
+    confetti({
+      particleCount: 70,
+      spread: 60,
+      origin: { y: 0.6 }
+    });
+    showToast(`KTA "${staff.name}" berhasil diperpanjang hingga 31 Desember 2029!`);
   };
 
   const handleDeleteStaff = async (id) => {
@@ -333,6 +360,10 @@ export default function App() {
 
   const handleOpenSupabaseModal = () => {
     openModalWithHistory(setIsSupabaseModalOpen, null, null, 'supabase-config');
+  };
+
+  const handleOpenExpiryModal = () => {
+    openModalWithHistory(setIsExpiryModalOpen, null, null, 'kta-expiry');
   };
 
   // If user is not logged in, show LoginPage
@@ -451,8 +482,11 @@ export default function App() {
               <div className="absolute top-0 right-0 w-80 h-80 bg-rose-600/20 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
             </div>
 
-            {/* Dashboard Metric Statistics */}
-            <DashboardStats staffList={staffList} />
+            {/* Dashboard Metric Statistics with Clickable Expiry Card */}
+            <DashboardStats 
+              staffList={staffList} 
+              onOpenExpiryModal={handleOpenExpiryModal}
+            />
 
             {/* Filters and Search Bar */}
             <StaffFilters
@@ -608,6 +642,15 @@ export default function App() {
         isOpen={isVerifyModalOpen}
         onClose={returnToHome}
         onSelectStaff={(s) => setSelectedStaffForVerify(s)}
+      />
+
+      <KtaExpiryModal
+        isOpen={isExpiryModalOpen}
+        onClose={returnToHome}
+        expiringStaffList={expiringStaffList}
+        onRenewKta={handleRenewKta}
+        onOpenIdCard={handleOpenIdCardModal}
+        onEditStaff={handleOpenEditModal}
       />
 
       {isDeveloper && (

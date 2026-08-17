@@ -7,10 +7,11 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   TrendingUp,
-  Briefcase
+  Briefcase,
+  ChevronRight
 } from 'lucide-react';
 
-export default function DashboardStats({ staffList }) {
+export default function DashboardStats({ staffList, onOpenExpiryModal }) {
   const totalStaff = staffList.length;
   
   // Total UKW Certified
@@ -31,11 +32,12 @@ export default function DashboardStats({ staffList }) {
 
   // KTA Expiry Alert (Expiring within next 12 months or already expired)
   const currentYear = new Date().getFullYear();
-  const expiringSoonCount = staffList.filter(s => {
+  const expiringStaffList = staffList.filter(s => {
     if (!s.ktaExpiry) return false;
     const expYear = parseInt(s.ktaExpiry.slice(0, 4));
     return expYear <= currentYear + 1;
-  }).length;
+  });
+  const expiringSoonCount = expiringStaffList.length;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
@@ -60,7 +62,7 @@ export default function DashboardStats({ staffList }) {
           </span>
         </div>
         <p className="text-xs text-slate-400 mt-2">
-          Dewan Redaksi, Jurnalis & Staf Jarrakpos
+          Dewan Redaksi, Jurnalis &amp; Staf Jarrakpos
         </p>
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-rose-700"></div>
       </div>
@@ -108,38 +110,52 @@ export default function DashboardStats({ staffList }) {
           <span className="text-xs font-medium text-slate-500">Wilayah Liputan</span>
         </div>
         <p className="text-xs text-slate-400 mt-2">
-          Pusat Bali, Jakarta, Jatim, Sumut, IKN & Nusantara
+          Pusat Bali, Jakarta, Jatim, Sumut, IKN &amp; Nusantara
         </p>
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-400 to-blue-600"></div>
       </div>
 
-      {/* Card 4: KTA & Validitas Hukum */}
-      <div className="relative overflow-hidden bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group">
+      {/* Card 4: KTA & Validitas Hukum (CLICKABLE TO OPEN EXPIRY MODAL) */}
+      <div 
+        onClick={() => onOpenExpiryModal && onOpenExpiryModal(expiringStaffList)}
+        className="relative overflow-hidden bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-lg hover:border-amber-400 transition-all cursor-pointer group"
+        title="Klik untuk melihat detail daftar KTA yang perlu perpanjangan"
+      >
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
             Status KTA Digital
           </span>
-          <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+          <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all">
             <CreditCard className="w-5 h-5" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-extrabold text-emerald-600 tracking-tight">
-            100%
+        
+        <div className="flex items-baseline justify-between">
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-amber-600 tracking-tight">
+              {expiringSoonCount}
+            </span>
+            <span className="text-xs font-bold text-amber-700 uppercase">
+              Perlu Perpanjangan
+            </span>
+          </div>
+
+          <span className="text-[11px] font-bold text-rose-600 group-hover:underline flex items-center">
+            Detail <ChevronRight className="w-3.5 h-3.5 inline" />
           </span>
-          <span className="text-xs font-medium text-slate-500">QR Validated</span>
         </div>
+
         <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
           {expiringSoonCount > 0 ? (
-            <span className="text-amber-600 font-medium flex items-center gap-1">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              {expiringSoonCount} KTA perlu perpanjangan
+            <span className="text-amber-700 font-semibold flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              Klik untuk lihat daftar personil
             </span>
           ) : (
             <span className="text-emerald-600 font-medium">Semua KTA dalam masa aktif</span>
           )}
         </p>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-600"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 to-rose-600"></div>
       </div>
 
     </div>
