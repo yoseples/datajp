@@ -11,9 +11,12 @@ import {
   Database,
   Users,
   LogOut,
-  UserCheck
+  UserCheck,
+  Cloud,
+  CloudCheck
 } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/storage';
+import { getSupabaseConfig } from '../utils/supabaseClient';
 import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
 export default function Navbar({ 
@@ -24,6 +27,8 @@ export default function Navbar({
   onResetData, 
   onImportData, 
   onOpenVerifyModal,
+  onOpenSupabaseModal,
+  isSupabaseActive,
   searchQuery,
   setSearchQuery,
   activeView,
@@ -84,14 +89,14 @@ export default function Navbar({
           </div>
 
           {/* Quick Search in Navbar (Desktop) */}
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-6">
+          <div className="hidden md:flex items-center flex-1 max-w-xs xl:max-w-sm mx-4">
             <div className="relative w-full">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari nama, NIP, jabatan, atau biro..."
+                placeholder="Cari nama, NIP, biro..."
                 className="w-full bg-slate-800/90 hover:bg-slate-800 text-slate-100 placeholder-slate-400 text-sm rounded-xl pl-10 pr-4 py-2 border border-slate-700 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all"
               />
               {searchQuery && (
@@ -105,13 +110,30 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* Action Buttons & User Profile */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Action Buttons & Cloud Status */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
             
+            {/* Supabase Status / Setup Button */}
+            <button
+              onClick={onOpenSupabaseModal}
+              title={isSupabaseActive ? "Supabase Cloud Database Terhubung" : "Konfigurasi Database Cloud Supabase"}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                isSupabaseActive
+                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60 hover:bg-emerald-900 shadow-sm'
+                  : 'bg-slate-800 text-amber-300 border-amber-500/40 hover:bg-slate-700'
+              }`}
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">
+                {isSupabaseActive ? 'Cloud Supabase' : 'Setup Supabase'}
+              </span>
+              <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            </button>
+
             {/* Direct Add Button */}
             <button
               onClick={onOpenAddModal}
-              className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-semibold text-xs sm:text-sm px-3.5 sm:px-4 py-2.5 rounded-xl shadow-lg shadow-rose-900/30 transition-all active:scale-95"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-rose-900/30 transition-all active:scale-95"
             >
               <UserPlus className="w-4 h-4" />
               <span className="hidden sm:inline">Tambah Redaksi</span>
@@ -122,10 +144,10 @@ export default function Navbar({
             <button
               onClick={() => onOpenVerifyModal(null)}
               title="Cek Verifikasi Wartawan Publik"
-              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 font-medium text-xs px-3 py-2.5 rounded-xl border border-slate-700 transition-all"
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 font-medium text-xs px-2.5 sm:px-3 py-2 rounded-xl border border-slate-700 transition-all"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span className="hidden lg:inline">Cek Validasi KTA</span>
+              <span className="hidden lg:inline">Validasi KTA</span>
             </button>
 
             {/* Export Dropdown / Buttons */}
@@ -133,7 +155,7 @@ export default function Navbar({
               <button
                 onClick={() => exportToCSV(staffList)}
                 title="Export Data ke Excel (CSV)"
-                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2 py-1 rounded-lg text-xs font-medium transition-all"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-400" />
                 CSV
@@ -141,7 +163,7 @@ export default function Navbar({
               <button
                 onClick={() => exportToJSON(staffList)}
                 title="Backup Seluruh Database (JSON)"
-                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2 py-1 rounded-lg text-xs font-medium transition-all"
               >
                 <Database className="w-3.5 h-3.5 text-amber-400" />
                 Backup
@@ -149,7 +171,7 @@ export default function Navbar({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 title="Restore / Import JSON"
-                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all"
+                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2 py-1 rounded-lg text-xs font-medium transition-all"
               >
                 <Upload className="w-3.5 h-3.5 text-sky-400" />
                 Restore
@@ -167,10 +189,10 @@ export default function Navbar({
             {currentUser && (
               <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
                 <div className="hidden xl:block text-right">
-                  <div className="text-xs font-bold text-white leading-tight truncate max-w-[140px]">
+                  <div className="text-xs font-bold text-white leading-tight truncate max-w-[130px]">
                     {currentUser.name}
                   </div>
-                  <div className="text-[10px] text-rose-400 font-medium truncate max-w-[140px]">
+                  <div className="text-[10px] text-rose-400 font-medium truncate max-w-[130px]">
                     {currentUser.badge || currentUser.role}
                   </div>
                 </div>
@@ -178,7 +200,7 @@ export default function Navbar({
                 <button
                   onClick={onLogout}
                   title={`Keluar (${currentUser.email})`}
-                  className="flex items-center gap-1 bg-slate-800 hover:bg-rose-950/80 text-slate-400 hover:text-rose-300 border border-slate-700 hover:border-rose-700/80 p-2.5 rounded-xl transition-all"
+                  className="flex items-center gap-1 bg-slate-800 hover:bg-rose-950/80 text-slate-400 hover:text-rose-300 border border-slate-700 hover:border-rose-700/80 p-2 rounded-xl transition-all"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -193,7 +215,7 @@ export default function Navbar({
                 }
               }}
               title="Reset ke Data Bawaan"
-              className="p-2.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-all"
+              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-all"
             >
               <RotateCcw className="w-4 h-4" />
             </button>

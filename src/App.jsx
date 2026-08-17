@@ -5,6 +5,13 @@ import {
   saveStoredStaff, 
   resetToInitialStaff 
 } from './utils/storage';
+import {
+  getSupabaseConfig,
+  fetchStaffFromSupabase,
+  saveStaffToSupabase,
+  deleteStaffFromSupabase,
+  syncAllStaffToSupabase
+} from './utils/supabaseClient';
 import Navbar from './components/Navbar';
 import DashboardStats from './components/DashboardStats';
 import StaffFilters from './components/StaffFilters';
@@ -15,14 +22,16 @@ import StaffFormModal from './components/StaffFormModal';
 import StaffDetailModal from './components/StaffDetailModal';
 import IdCardModal from './components/IdCardModal';
 import PublicVerifyModal from './components/PublicVerifyModal';
+import SupabaseModal from './components/SupabaseModal';
 import LoginPage from './components/LoginPage';
 import { 
   Building2, 
   Globe, 
   ShieldCheck, 
   Users, 
-  Sparkles,
-  FileSpreadsheet,
+  Sparkles, 
+  Database,
+  Cloud,
   AlertCircle,
   Plus
 } from 'lucide-react';
@@ -43,7 +52,9 @@ export default function App() {
   // Master State
   const [staffList, setStaffList] = useState([]);
   const [activeView, setActiveView] = useState('grid'); // 'grid' | 'table' | 'orgchart'
-  
+  const [isSupabaseActive, setIsSupabaseActive] = useState(false);
+  const [isLoadingCloud, setIsLoadingCloud] = useState(false);
+
   // Filter States
   const [selectedDivision, setSelectedDivision] = useState('Semua Divisi');
   const [selectedBureau, setSelectedBureau] = useState('Semua Biro');
@@ -64,18 +75,50 @@ export default function App() {
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   const [selectedStaffForVerify, setSelectedStaffForVerify] = useState(null);
 
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
-
-  // Initialize staff list
-  useEffect(() => {
-    const data = getStoredStaff();
-    setStaffList(data);
-  }, []);
 
   const showToast = (msg, type = 'success') => {
     setToastMessage({ text: msg, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
+
+  // Load Data from Supabase or LocalStorage
+  const loadDatabase = async () => {
+    const config = getSupabaseConfig();
+    if (config.url && config.key) {
+      setIsLoadingCloud(true);
+      try {
+        const cloudData = await fetchStaffFromSupabase();
+        if (cloudData && cloudData.length > 0) {
+          setStaffList(cloudData);
+          saveStoredStaff(cloudData);
+          setIsSupabaseActive(true);
+          showToast(`Terhubung ke Supabase Cloud (${cloudData.length} data dimuat)`, 'success');
+        } else {
+          // Table empty, seed local data into Supabase
+          const local = getStoredStaff();
+          setStaffList(local);
+          setIsSupabaseActive(true);
+          await syncAllStaffToSupabase(local);
+          showToast(`Supabase aktif: Otomatis sinkronisasi ${local.length} data redaksi ke cloud!`, 'success');
+        }
+      } catch (err) {
+        console.warn('Supabase fetch failed, falling back to local:', err);
+        setIsSupabaseActive(false);
+        setStaffList(getStoredStaff());
+      } finally {
+        setIsLoadingCloud(false);
+      }
+    } else {
+      setIsSupabaseActive(false);
+      setStaffList(getStoredStaff());
+    }
+  };
+
+  useEffect(() => {
+    loadDatabase();
+  }, []);
 
   // Auth Handlers
   const handleLoginSuccess = (user, remember) => {
@@ -134,8 +177,8 @@ export default function App() {
     });
   }, [staffList, selectedDivision, selectedBureau, selectedUkw, selectedStatus, searchQuery]);
 
-  // Handlers
-  const handleSaveStaff = (staffData) => {
+  // Handlers (Hybrid Supabase + Local)
+  const handleSaveStaff = async (staffData) => {
     let updated;
     const exists = staffList.some(s => s.id === staffData.id);
     
@@ -151,11 +194,21 @@ export default function App() {
       });
       showToast(`Anggota redaksi "${staffData.name}" berhasil ditambahkan!`);
     }
+    
     setStaffList(updated);
     saveStoredStaff(updated);
+
+    // If Supabase active, save to cloud
+    if (isSupabaseActive) {
+      try {
+        await saveStaffToSupabase(staffData);
+      } catch (err) {
+        console.error('Failed to sync save to Supabase:', err);
+      }
+    }
   };
 
-  const handleDeleteStaff = (id) => {
+  const handleDeleteStaff = async (id) => {
     const target = staffList.find(s => s.id === id);
     if (!target) return;
     if (confirm(`Apakah Anda yakin ingin menghapus "${target.name}" dari database redaksi?`)) {
@@ -163,18 +216,32 @@ export default function App() {
       setStaffList(updated);
       saveStoredStaff(updated);
       showToast(`"${target.name}" telah dihapus dari database.`, 'info');
+
+      if (isSupabaseActive) {
+        try {
+          await deleteStaffFromSupabase(id);
+        } catch (err) {
+          console.error('Failed to sync delete to Supabase:', err);
+        }
+      }
     }
   };
 
   const handleResetData = () => {
     const freshData = resetToInitialStaff();
     setStaffList(freshData);
-    showToast('Database berhasil direset ke data bawaan.');
+    if (isSupabaseActive) {
+      syncAllStaffToSupabase(freshData).catch(console.error);
+    }
+    showToast('Database berhasil direset ke data resmi Jarrakpos.');
   };
 
   const handleImportData = (newData) => {
     setStaffList(newData);
     saveStoredStaff(newData);
+    if (isSupabaseActive) {
+      syncAllStaffToSupabase(newData).catch(console.error);
+    }
     showToast(`Berhasil mengimpor ${newData.length} data personil redaksi!`);
   };
 
@@ -230,6 +297,8 @@ export default function App() {
         onResetData={handleResetData}
         onImportData={handleImportData}
         onOpenVerifyModal={handleOpenVerifyModal}
+        onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+        isSupabaseActive={isSupabaseActive}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         activeView={activeView}
@@ -242,10 +311,25 @@ export default function App() {
         {/* Hero Section Banner */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 p-6 sm:p-8 text-white shadow-xl mb-8 border border-slate-800">
           <div className="relative z-10 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              Sistem Bank Data Terpadu Jarrakpos
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5" />
+                Sistem Bank Data Terpadu Jarrakpos
+              </div>
+              
+              <div 
+                onClick={() => setIsSupabaseModalOpen(true)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider cursor-pointer transition-all ${
+                  isSupabaseActive
+                    ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900'
+                    : 'bg-amber-950/80 border-amber-500/50 text-amber-300 hover:bg-amber-900'
+                }`}
+              >
+                <Database className="w-3 h-3" />
+                <span>{isSupabaseActive ? 'Cloud Supabase Aktif' : 'Penyimpanan Lokal (Klik untuk Setup Supabase)'}</span>
+              </div>
             </div>
+
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
               Database Dewan Redaksi & Bank Data Wartawan
             </h1>
@@ -268,6 +352,13 @@ export default function App() {
             >
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               Verifikasi QR Kartu Pers
+            </button>
+            <button
+              onClick={() => setIsSupabaseModalOpen(true)}
+              className="flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-emerald-700/60 transition-all"
+            >
+              <Database className="w-4 h-4 text-emerald-400" />
+              Kelola Cloud Supabase
             </button>
           </div>
 
@@ -420,6 +511,13 @@ export default function App() {
         isOpen={isVerifyModalOpen}
         onClose={() => setIsVerifyModalOpen(false)}
         onSelectStaff={(s) => setSelectedStaffForVerify(s)}
+      />
+
+      <SupabaseModal
+        isOpen={isSupabaseModalOpen}
+        onClose={() => setIsSupabaseModalOpen(false)}
+        staffList={staffList}
+        onSupabaseConfigured={loadDatabase}
       />
 
     </div>
