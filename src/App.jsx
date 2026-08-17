@@ -31,6 +31,7 @@ import PublicVerifyModal from './components/PublicVerifyModal';
 import SupabaseModal from './components/SupabaseModal';
 import KtaExpiryModal from './components/KtaExpiryModal';
 import MediaHubSelector from './components/MediaHubSelector';
+import AccountSettingsModal from './components/AccountSettingsModal';
 import LoginPage, { SYSTEM_ROLES } from './components/LoginPage';
 import WartawanPortal from './components/WartawanPortal';
 import ScrollToTop from './components/ScrollToTop';
@@ -184,6 +185,7 @@ export default function App() {
 
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [isExpiryModalOpen, setIsExpiryModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg, type = 'success') => {
@@ -199,6 +201,7 @@ export default function App() {
     setIsVerifyModalOpen(false);
     setIsSupabaseModalOpen(false);
     setIsExpiryModalOpen(false);
+    setIsSettingsModalOpen(false);
     setSelectedStaffForDetail(null);
     setSelectedStaffForIdCard(null);
     setSelectedStaffForVerify(null);
@@ -488,6 +491,10 @@ export default function App() {
     openModalWithHistory(setIsExpiryModalOpen, null, null, 'kta-expiry');
   };
 
+  const handleOpenSettingsModal = () => {
+    openModalWithHistory(setIsSettingsModalOpen, null, null, 'account-settings');
+  };
+
   // 1. IF NOT LOGGED IN -> Show LoginPage
   if (!currentUser) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} allStaff={activeStaffList || []} />;
@@ -524,12 +531,13 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Navbar with Media Platform Switcher */}
+      {/* Main Navbar with Media Platform Switcher & Settings */}
       <Navbar
         currentUser={currentUser}
         currentPlatform={currentPlatform}
         onSwitchPlatform={handleSelectPlatform}
         onOpenHub={handleOpenHub}
+        onOpenSettingsModal={handleOpenSettingsModal}
         onLogout={handleLogout}
         staffList={activeStaffList || []}
         onOpenAddModal={handleOpenAddModal}
@@ -804,6 +812,15 @@ export default function App() {
         onRenewKta={handleRenewKta}
         onOpenIdCard={handleOpenIdCardModal}
         onEditStaff={handleOpenEditModal}
+      />
+
+      <AccountSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={returnToHome}
+        currentUser={currentUser}
+        onCredentialsUpdated={(updated) => {
+          showToast('Kredensial login berhasil diperbarui!');
+        }}
       />
 
       {isDeveloper && (

@@ -1,66 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Lock, 
-  Mail, 
+  User, 
   Eye, 
   EyeOff, 
   ArrowRight, 
-  AlertCircle,
-  Sparkles,
-  KeyRound,
-  Code2,
-  ShieldAlert,
-  User
+  AlertCircle, 
+  Sparkles, 
+  KeyRound, 
+  Code2, 
+  ShieldAlert
 } from 'lucide-react';
+import { 
+  getStoredCredentials, 
+  authenticateUser, 
+  SYSTEM_ROLES 
+} from '../utils/authCredentials';
 import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
-export const SYSTEM_ROLES = {
-  DEVELOPER: 'Developer',
-  ADMIN: 'Admin',
-  WARTAWAN: 'Wartawan'
-};
-
-const PRESET_ACCOUNTS = [
-  {
-    role: SYSTEM_ROLES.DEVELOPER,
-    roleTitle: 'Developer (Full Root & Cloud Access)',
-    email: 'developer@jarrakpos.com',
-    pass: 'dev123',
-    name: 'Kang Ocep (Lead Developer)',
-    badge: 'Super Developer',
-    description: 'Akses penuh ke seluruh sistem, konfigurasi Supabase, dan master data.',
-    staffId: 'JP-RED-015'
-  },
-  {
-    role: SYSTEM_ROLES.ADMIN,
-    roleTitle: 'Admin (Pimpinan Redaksi & HRD)',
-    email: 'admin@jarrakpos.com',
-    pass: 'admin123',
-    name: 'I Gede Putu Sudiarta, S.H.',
-    badge: 'Administrator Redaksi',
-    description: 'Akses manajemen seluruh dewan redaksi, tambah/edit anggota, dan cetak massal.',
-    staffId: 'JP-RED-001'
-  },
-  {
-    role: SYSTEM_ROLES.WARTAWAN,
-    roleTitle: 'Wartawan (Hanya Profil Mandiri)',
-    email: 'asep.dpr@jarrakpos.com',
-    pass: 'wartawan123',
-    name: 'Asep (Wartawan Biro DPR RI)',
-    badge: 'Jurnalis / Wartawan',
-    description: 'Hanya dapat melihat, mengunduh KTA, dan memperbarui foto/profil miliknya sendiri.',
-    staffId: 'JP-RED-028'
-  }
-];
+export { SYSTEM_ROLES };
 
 export default function LoginPage({ onLoginSuccess, allStaff = [] }) {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [credentials, setCredentials] = useState(getStoredCredentials);
+
+  useEffect(() => {
+    setCredentials(getStoredCredentials());
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -68,155 +40,113 @@ export default function LoginPage({ onLoginSuccess, allStaff = [] }) {
     setIsLoading(true);
 
     setTimeout(() => {
-      const inputEmail = email.trim().toLowerCase();
+      const authResult = authenticateUser(identifier, password, allStaff);
 
-      // 1. Check Developer preset
-      if (inputEmail === 'developer@jarrakpos.com' && password === 'dev123') {
-        onLoginSuccess({
-          email: 'developer@jarrakpos.com',
-          name: 'Kang Ocep',
-          role: SYSTEM_ROLES.DEVELOPER,
-          badge: 'Super Developer',
-          staffId: 'JP-RED-015'
-        }, rememberMe);
-        return;
-      }
-
-      // 2. Check Admin preset
-      if ((inputEmail === 'admin@jarrakpos.com' || inputEmail === 'dewan.redaksi@jarrakpos.com' || inputEmail === 'pemred@jarrakpos.com') && (password === 'admin123' || password === 'pemred123')) {
-        onLoginSuccess({
-          email: inputEmail,
-          name: 'I Gede Putu Sudiarta, S.H.',
-          role: SYSTEM_ROLES.ADMIN,
-          badge: 'Administrator Redaksi',
-          staffId: 'JP-RED-001'
-        }, rememberMe);
-        return;
-      }
-
-      // 3. Check matched staff by email as Wartawan
-      const matchedStaff = allStaff.find(
-        s => s.email && s.email.toLowerCase() === inputEmail
-      );
-
-      if (matchedStaff) {
-        onLoginSuccess({
-          email: matchedStaff.email,
-          name: matchedStaff.name,
-          role: SYSTEM_ROLES.WARTAWAN,
-          badge: `${matchedStaff.role} (${matchedStaff.bureau})`,
-          staffId: matchedStaff.id
-        }, rememberMe);
-        return;
-      }
-
-      // 4. Fallback: if password is valid
-      if (password.length >= 4) {
-        onLoginSuccess({
-          email: inputEmail,
-          name: inputEmail.split('@')[0].toUpperCase(),
-          role: SYSTEM_ROLES.WARTAWAN,
-          badge: 'Wartawan Mandiri',
-          staffId: allStaff[0]?.id || 'JP-RED-028'
-        }, rememberMe);
+      if (authResult) {
+        onLoginSuccess(authResult, rememberMe);
       } else {
-        setErrorMsg('Email atau kata sandi tidak valid. Silakan pilih salah satu role akun di bawah.');
+        setErrorMsg('Username / email atau kata sandi tidak valid. Silakan periksa kembali kredensial Anda.');
         setIsLoading(false);
       }
-    }, 500);
+    }, 400);
   };
 
-  const handleQuickLogin = (preset) => {
-    setEmail(preset.email);
-    setPassword(preset.pass);
-    setErrorMsg('');
+  const handleQuickLogin = (roleKey) => {
+    const cred = credentials[roleKey];
+    if (cred) {
+      setIdentifier(cred.username);
+      setPassword(cred.password);
+      setErrorMsg('');
+      setIsLoading(true);
+      setTimeout(() => {
+        const authResult = authenticateUser(cred.username, cred.password, allStaff);
+        if (authResult) {
+          onLoginSuccess(authResult, true);
+        } else {
+          setIsLoading(false);
+        }
+      }, 300);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden selection:bg-rose-500 selection:text-white">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between py-6 px-4 sm:px-6 lg:px-8 relative overflow-hidden selection:bg-rose-500 selection:text-white">
       
       {/* Background Ambient Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-600/15 rounded-full blur-[140px] pointer-events-none"></div>
-      <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-[500px] h-72 sm:h-[500px] bg-rose-600/15 rounded-full blur-[100px] sm:blur-[140px] pointer-events-none"></div>
+      <div className="absolute bottom-10 right-1/4 w-72 sm:w-[500px] h-72 sm:h-[500px] bg-red-600/10 rounded-full blur-[100px] sm:blur-[140px] pointer-events-none"></div>
 
-      {/* Brand Header with Official Logo */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-lg text-center relative z-10">
-        <div className="inline-flex items-center justify-center p-3 rounded-3xl bg-white shadow-2xl shadow-rose-900/40 border-2 border-rose-500/50 mb-4 animate-in zoom-in-90 duration-300 hover:scale-105 transition-transform">
-          <img
-            src={logoJarrakpos}
-            alt="Logo Resmi Jarrakpos.com"
-            className="w-24 h-24 object-contain drop-shadow-md"
-          />
+      {/* Top Brand Header */}
+      <div className="max-w-md mx-auto w-full text-center relative z-10 pt-2 sm:pt-4">
+        <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white p-1.5 shadow-2xl border-2 border-rose-500/50 mb-3 animate-in zoom-in-75">
+          <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain" />
         </div>
-        
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center justify-center gap-1.5">
           JARRAK<span className="text-rose-500">POS</span>.COM
         </h1>
-        <p className="text-xs sm:text-sm text-slate-400 mt-1 font-medium">
-          Portal Sistem Bank Data & Database Dewan Redaksi
+        <p className="text-xs text-slate-400 mt-0.5">
+          Sistem Database Dewan Redaksi &amp; Bank Data Karyawan
         </p>
       </div>
 
       {/* Login Card */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg relative z-10 px-4 sm:px-0">
-        <div className="bg-slate-900/90 backdrop-blur-xl py-8 px-6 sm:px-10 shadow-2xl rounded-3xl border border-slate-800 text-slate-100">
+      <div className="max-w-md mx-auto w-full my-auto py-4 sm:py-6 relative z-10">
+        <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl">
           
-          <div className="mb-6 pb-4 border-b border-slate-800 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-white">Masuk Sesuai Hak Akses</h2>
-              <p className="text-xs text-slate-400">Pilih Role: Developer, Admin, atau Wartawan</p>
-            </div>
-            <div className="p-2 rounded-xl bg-slate-800 text-rose-400 border border-slate-700">
-              <KeyRound className="w-4 h-4" />
-            </div>
+          <div className="mb-5 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-rose-500" />
+              <span>Masuk ke Sistem</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Gunakan username atau email terdaftar untuk mengakses database redaksi.
+            </p>
           </div>
 
           {errorMsg && (
-            <div className="mb-5 p-3.5 rounded-xl bg-rose-950/70 border border-rose-800/80 text-rose-300 text-xs flex items-center gap-2.5 animate-in shake">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+            <div className="mb-5 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* Email Field */}
+            {/* Username or Email Input */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Email Akun Pers / Staf
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-rose-400" />
+                <span>Username atau Email</span>
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@jarrakpos.com"
-                  required
-                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all"
-                />
-              </div>
+              <input
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="developer / admin / pewarta"
+                required
+                className="w-full bg-slate-950/80 border border-slate-700 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 transition-all font-mono"
+              />
             </div>
 
-            {/* Password Field */}
+            {/* Password Input */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                Kata Sandi (Password)
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-rose-400" />
+                <span>Password / Kata Sandi</span>
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="••••••••••••"
                   required
-                  className="w-full bg-slate-950/80 border border-slate-700 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all"
+                  className="w-full bg-slate-950/80 border border-slate-700 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-2xl pl-4 pr-11 py-3 text-sm text-white placeholder-slate-500 transition-all font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -225,29 +155,28 @@ export default function LoginPage({ onLoginSuccess, allStaff = [] }) {
 
             {/* Remember Me */}
             <div className="flex items-center justify-between text-xs pt-1">
-              <label className="flex items-center gap-2 text-slate-400 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer select-none text-slate-300">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="rounded bg-slate-800 border-slate-700 text-rose-600 focus:ring-rose-500"
+                  className="w-4 h-4 rounded-md border-slate-700 bg-slate-950 text-rose-600 focus:ring-rose-500"
                 />
-                <span>Ingat akun saya</span>
+                <span>Ingat Akun Saya</span>
               </label>
-              <span className="text-slate-500 text-[11px]">3 Role Tersedia</span>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-rose-900/40 transition-all active:scale-98 disabled:opacity-70"
+              className="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-bold py-3 px-4 rounded-2xl shadow-lg shadow-rose-900/30 flex items-center justify-center gap-2 text-sm transition-all active:scale-[0.98] disabled:opacity-50 mt-2"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Memverifikasi...</span>
               ) : (
                 <>
-                  <span>Masuk ke Sistem</span>
+                  <span>Masuk ke Database</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -255,60 +184,97 @@ export default function LoginPage({ onLoginSuccess, allStaff = [] }) {
 
           </form>
 
-          {/* Quick Demo Login Presets for 3 Roles */}
-          <div className="mt-6 pt-5 border-t border-slate-800" id="demo">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Pilih 3 Role Akun Demo (1 Klik):
+          {/* Quick Login Section */}
+          <div className="mt-6 pt-5 border-t border-slate-800">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2.5 text-center">
+              Pilihan Login 1-Klik (Demo Cepat):
             </span>
 
-            <div className="space-y-2.5">
-              {PRESET_ACCOUNTS.map((acc, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleQuickLogin(acc)}
-                  className="w-full text-left p-3 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-rose-500 transition-all flex items-start justify-between group"
-                >
-                  <div className="min-w-0 pr-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${
-                        acc.role === SYSTEM_ROLES.DEVELOPER 
-                          ? 'bg-purple-950 text-purple-300 border-purple-700'
-                          : acc.role === SYSTEM_ROLES.ADMIN
-                          ? 'bg-rose-950 text-rose-300 border-rose-700'
-                          : 'bg-emerald-950 text-emerald-300 border-emerald-700'
-                      }`}>
-                        {acc.role}
-                      </span>
-                      <span className="font-bold text-xs text-white group-hover:text-rose-400 transition-colors truncate">
-                        {acc.name}
-                      </span>
+            <div className="space-y-2">
+              
+              {/* Developer Option */}
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('developer')}
+                className="w-full text-left p-2.5 rounded-2xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/50 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-purple-950/80 text-purple-400 flex items-center justify-center font-bold text-xs border border-purple-800/60 shrink-0">
+                    DEV
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-white group-hover:text-purple-300 truncate">
+                      Developer (Root Access)
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-snug">
-                      {acc.description}
-                    </p>
-                    <div className="text-[10px] text-slate-500 font-mono mt-1">
-                      {acc.email} (pass: {acc.pass})
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      User: {credentials.developer?.username} | Pass: ••••••••
                     </div>
                   </div>
-                  
-                  <span className="text-[10px] px-2.5 py-1 rounded-lg font-bold bg-slate-900 text-rose-300 border border-slate-700 shrink-0 self-center">
-                    Pilih
-                  </span>
-                </button>
-              ))}
+                </div>
+                <span className="text-[10px] bg-purple-950 text-purple-300 font-bold px-2 py-0.5 rounded-lg border border-purple-800 shrink-0">
+                  Full Root
+                </span>
+              </button>
+
+              {/* Admin Option */}
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('admin')}
+                className="w-full text-left p-2.5 rounded-2xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800 hover:border-rose-500/50 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-rose-950/80 text-rose-400 flex items-center justify-center font-bold text-xs border border-rose-800/60 shrink-0">
+                    ADM
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-white group-hover:text-rose-300 truncate">
+                      Admin (Pimpinan Redaksi)
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      User: {credentials.admin?.username} | Pass: ••••••••
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-rose-950 text-rose-300 font-bold px-2 py-0.5 rounded-lg border border-rose-800 shrink-0">
+                  Redaksi
+                </span>
+              </button>
+
+              {/* Wartawan Option */}
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('wartawan')}
+                className="w-full text-left p-2.5 rounded-2xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 transition-all flex items-center justify-between group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-950/80 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-800/60 shrink-0">
+                    WAR
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-white group-hover:text-emerald-300 truncate">
+                      Wartawan / Pewarta
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      User: {credentials.wartawan?.username} | Pass: ••••••••
+                    </div>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-emerald-950 text-emerald-300 font-bold px-2 py-0.5 rounded-lg border border-emerald-800 shrink-0">
+                  Self Portal
+                </span>
+              </button>
+
             </div>
+
           </div>
 
         </div>
+      </div>
 
-        {/* Security Footer Notice */}
-        <div className="text-center mt-6 text-xs text-slate-500 flex items-center justify-center gap-1.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" />
-          <span>Sistem Hak Akses Berjenjang Pers Jarrakpos.com</span>
-        </div>
-
+      {/* Footer */}
+      <div className="max-w-md mx-auto w-full text-center text-xs text-slate-500 py-3 relative z-10">
+        <p>© {new Date().getFullYear()} JARRAK MEDIA GROUP. All rights reserved.</p>
+        <p className="text-[11px] text-slate-600 mt-0.5">Sistem Database Terpadu Jarrakpos</p>
       </div>
 
     </div>

@@ -74,7 +74,7 @@ export default function MediaHubSelector({
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             Pusat Database Terpadu Media Group
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
             Pilih Platform Redaksi
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
@@ -83,35 +83,35 @@ export default function MediaHubSelector({
         </div>
 
         {/* 3 Platform Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
           
           {/* 1. JARRAKPOS.COM */}
           <div 
             onClick={() => onSelectPlatform('jarrakpos')}
-            className="bg-slate-900/90 hover:bg-slate-850 rounded-3xl p-6 sm:p-7 border border-slate-800 hover:border-rose-500 shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+            className="bg-slate-900/90 hover:bg-slate-800 rounded-3xl p-5 sm:p-7 border border-slate-800 hover:border-rose-500 shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
           >
             <div>
-              <div className="flex items-center justify-between mb-5">
-                <div className="w-14 h-14 rounded-2xl bg-rose-950/90 text-rose-400 border border-rose-700/60 flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-lg">
-                  <Globe className="w-7 h-7" />
+              <div className="flex items-center justify-between mb-4 sm:mb-5">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-rose-950/90 text-rose-400 border border-rose-700/60 flex items-center justify-center group-hover:scale-110 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-lg">
+                  <Globe className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
                 <span className="px-3 py-1 rounded-full bg-slate-800 text-[10px] font-bold text-rose-300 border border-slate-700">
                   {MEDIA_PLATFORMS.JARRAKPOS.badge}
                 </span>
               </div>
 
-              <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-rose-400 transition-colors">
+              <h2 className="text-lg sm:text-2xl font-black text-white group-hover:text-rose-400 transition-colors">
                 JARRAKPOS.COM
               </h2>
               <p className="text-xs font-semibold text-rose-300/90 mt-1">
                 {MEDIA_PLATFORMS.JARRAKPOS.title}
               </p>
-              <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+              <p className="text-xs text-slate-400 mt-2.5 leading-relaxed">
                 {MEDIA_PLATFORMS.JARRAKPOS.description}
               </p>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between">
+            <div className="mt-6 sm:mt-8 pt-4 border-t border-slate-800 flex items-center justify-between">
               <div className="text-xs font-bold text-slate-400">
                 <span className="text-white font-extrabold text-sm">{platformStaffCounts.jarrakpos || 50}</span> Anggota Redaksi
               </div>
@@ -128,19 +128,19 @@ export default function MediaHubSelector({
           {/* 2. JARRAKPOSTV */}
           <div 
             onClick={() => onSelectPlatform('jarrakpostv')}
-            className="bg-slate-900/90 hover:bg-slate-850 rounded-3xl p-6 sm:p-7 border border-slate-800 hover:border-red-500 shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+            className="bg-slate-900/90 hover:bg-slate-800 rounded-3xl p-5 sm:p-7 border border-slate-800 hover:border-red-500 shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
           >
             <div>
-              <div className="flex items-center justify-between mb-5">
-                <div className="w-14 h-14 rounded-2xl bg-red-950/90 text-red-400 border border-red-700/60 flex items-center justify-center group-hover:scale-110 group-hover:bg-red-600 group-hover:text-white transition-all shadow-lg">
-                  <Tv className="w-7 h-7" />
+              <div className="flex items-center justify-between mb-4 sm:mb-5">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-red-950/90 text-red-400 border border-red-700/60 flex items-center justify-center group-hover:scale-110 group-hover:bg-red-600 group-hover:text-white transition-all shadow-lg">
+                  <Tv className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
                 <span className="px-3 py-1 rounded-full bg-slate-800 text-[10px] font-bold text-red-300 border border-slate-700">
                   {MEDIA_PLATFORMS.JARRAKPOSTV.badge}
                 </span>
               </div>
 
-              <h2 className="text-xl sm:text-2xl font-black text-white group-hover:text-red-400 transition-colors flex items-center gap-2">
+              <h2 className="text-lg sm:text-2xl font-black text-white group-hover:text-red-400 transition-colors flex items-center gap-2">
                 <span>JARRAKPOS TV</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-600/30 border border-red-500/50 text-[9px] font-bold text-red-300 uppercase">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span> Live
@@ -149,12 +149,12 @@ export default function MediaHubSelector({
               <p className="text-xs font-semibold text-red-300/90 mt-1">
                 {MEDIA_PLATFORMS.JARRAKPOSTV.title}
               </p>
-              <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+              <p className="text-xs text-slate-400 mt-2.5 leading-relaxed">
                 {MEDIA_PLATFORMS.JARRAKPOSTV.description}
               </p>
             </div>
 
-            <div className="mt-8 pt-4 border-t border-slate-800 flex items-center justify-between">
+            <div className="mt-6 sm:mt-8 pt-4 border-t border-slate-800 flex items-center justify-between">
               <div className="text-xs font-bold text-slate-400">
                 <span className="text-white font-extrabold text-sm">{platformStaffCounts.jarrakpostv || 6}</span> Tim Redaksi &amp; Siaran
               </div>
@@ -171,7 +171,7 @@ export default function MediaHubSelector({
           {/* 3. JARRAK PODCAST */}
           <div 
             onClick={() => onSelectPlatform('jarrakpodcast')}
-            className="bg-slate-900/90 hover:bg-slate-850 rounded-3xl p-6 sm:p-7 border border-slate-800 hover:border-amber-500 shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
+            className="bg-slate-900/90 hover:bg-slate-800 rounded-3xl p-5 sm:p-7 border border-slate-800 hover:border-amber-500 shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer group relative overflow-hidden flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between mb-5">
