@@ -189,12 +189,18 @@ export default function PublicVerifyModal({ staff, allStaff, isOpen, onClose, on
                 </span>
               </div>
 
-              <div className="p-3 bg-white rounded-xl border border-slate-200">
-                <span className="text-slate-500 font-semibold block mb-0.5">Badan Hukum Media:</span>
-                <span className="font-bold text-slate-800 flex items-center gap-1">
-                  <Building className="w-3.5 h-3.5 text-rose-500" />
-                  PT Jarrak Pos Media
-                </span>
+              {/* Office Contact Info */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-200/80 text-xs text-slate-600 space-y-1.5">
+                <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4 text-rose-600" />
+                  Kantor Redaksi PT JARRAK POS MEDIA NUSANTARA
+                </div>
+                <p>Jalan Danau Tempe No. 30, Desa Sanur Kauh, Denpasar Selatan, Denpasar, Bali 80227</p>
+                <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100 text-slate-500">
+                  <span>Telp: <strong className="text-rose-600">(0361) 4481522</strong></span>
+                  <span>•</span>
+                  <span>Email: <strong className="text-slate-700">admin@jarrakpos.com</strong></span>
+                </div>
               </div>
             </div>
 

@@ -433,16 +433,16 @@ export default function IdCardModal({
 
                 {/* Company Legal Notice */}
                 <div 
-                  className="mt-2 p-2 rounded-xl text-[8.5px] text-slate-600"
+                  className="mt-2 p-2 rounded-xl text-[8px] text-slate-600 leading-tight"
                   style={{
                     background: '#f1f5f9',
                     border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="font-bold text-slate-800">Diterbitkan Oleh:</div>
-                  <div>PT JARRAK POS MEDIA NUSANTARA</div>
-                  <div>SK Kemenkumham: AHU-0012389.AH.01.01</div>
-                  <div>Dewan Pers Terverifikasi Administrasi &amp; Faktual</div>
+                  <div className="font-bold text-slate-800">Diterbitkan Oleh: PT JARRAK POS MEDIA NUSANTARA</div>
+                  <div>Jl. Danau Tempe No. 30, Sanur Kauh, Denpasar Selatan, Bali 80227</div>
+                  <div>Telp: (0361) 4481522 | Email: admin@jarrakpos.com</div>
+                  <div className="text-[7.5px] text-slate-500 mt-0.5 font-mono">SK Kemenkumham: AHU-0012389.AH.01.01 • Dewan Pers</div>
                 </div>
               </div>
 

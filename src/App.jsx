@@ -551,9 +551,14 @@ export default function App() {
                 <div className="font-bold text-sm tracking-tight text-white">
                   JARRAKPOS.COM - PT JARRAK POS MEDIA NUSANTARA
                 </div>
-                <p className="text-xs text-slate-400">
-                  Kantor Pusat: Jl. Hayam Wuruk No. 88, Denpasar, Bali | Biro Jakarta, Surabaya, Medan, IKN
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Kantor Pusat: Jalan Danau Tempe No. 30, Desa Sanur Kauh, Denpasar Selatan, Denpasar, Bali 80227
                 </p>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400 mt-1">
+                  <span>Telp: <strong className="text-rose-400">(0361) 4481522</strong></span>
+                  <span>•</span>
+                  <span>Email: <strong className="text-slate-300">admin@jarrakpos.com</strong></span>
+                </div>
               </div>
             </div>
 
