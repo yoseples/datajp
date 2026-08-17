@@ -1,6 +1,7 @@
 # Aturan Pengembangan Project (Jarrakpos Database)
 
-## 📌 Aturan Wajib:
-1. **Selalu Push ke GitHub**:
-   - Setiap ada perubahan kode, penambahan fitur, perbaikan bug, atau konfigurasi baru, **selalu otomatis build (`npm run deploy`) dan commit + push ke branch `main` repositori GitHub (`https://github.com/yoseples/datajp.git`)**.
-   - Pastikan Live View di `gh-pages` selalu sinkron dan terupdate.
+## 📌 Aturan Wajib Permanen:
+1. **Selalu Update & Perbaiki Live View GitHub Pages**:
+   - Setiap kali ada perubahan kode atau konfigurasi, **selalu jalankan `npm run deploy`** untuk memastikan Live View di `https://yoseples.github.io/datajp/` selalu up-to-date, bebas error 404, dan aset termuat sempurna.
+2. **Selalu Push Perubahan ke GitHub**:
+   - Commit seluruh perubahan dengan pesan yang jelas dan **push ke branch `main` repositori `https://github.com/yoseples/datajp.git`** secara otomatis tanpa perlu diminta.
