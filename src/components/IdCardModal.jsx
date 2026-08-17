@@ -190,12 +190,16 @@ export default function IdCardModal({
               <div className="p-4 pt-4 text-center text-white relative">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-white p-0.5 shadow-md flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-white p-0.5 shadow-md flex items-center justify-center shrink-0">
                       <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain pointer-events-none" />
                     </div>
                     <div className="text-left leading-none">
-                      <span className="font-black text-sm tracking-tight text-white block">JARRAKPOS</span>
-                      <span className="text-[8px] font-mono text-rose-400 tracking-wider">MEDIA NUSANTARA</span>
+                      <span className="font-black text-sm tracking-tight text-white block">
+                        JARRAK<span className="text-rose-400">POS.COM</span>
+                      </span>
+                      <span className="text-[7.5px] font-bold text-slate-300 tracking-wider uppercase">
+                        BERSAMA MEMBANGUN BANGSA
+                      </span>
                     </div>
                   </div>
 
