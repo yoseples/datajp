@@ -25,6 +25,7 @@ import PublicVerifyModal from './components/PublicVerifyModal';
 import SupabaseModal from './components/SupabaseModal';
 import LoginPage, { SYSTEM_ROLES } from './components/LoginPage';
 import WartawanPortal from './components/WartawanPortal';
+import logoJarrakpos from './assets/logo-jarrakpos.png';
 import { 
   Building2, 
   Globe, 
@@ -543,13 +544,17 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-rose-600 text-white font-extrabold text-lg">
-                JP
+            <div className="flex items-center gap-3.5">
+              <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-white p-1 shadow-glow border border-rose-500/40 shrink-0">
+                <img
+                  src={logoJarrakpos}
+                  alt="Jarrakpos Logo"
+                  className="w-full h-full object-contain"
+                />
               </div>
               <div>
-                <div className="font-bold text-sm tracking-tight text-white">
-                  JARRAKPOS.COM - PT JARRAK POS MEDIA NUSANTARA
+                <div className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
+                  JARRAK<span className="text-rose-500">POS</span>.COM - PT JARRAK POS MEDIA NUSANTARA
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Kantor Pusat: Jalan Danau Tempe No. 30, Desa Sanur Kauh, Denpasar Selatan, Denpasar, Bali 80227
