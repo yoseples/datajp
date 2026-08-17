@@ -337,7 +337,7 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
                   onChange={handleChange}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-800 focus:bg-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 >
-                  {INITIAL_DIVISIONS.filter(d => d !== 'Semua Divisi').map(div => (
+                  {Array.from(new Set([formData.division, ...INITIAL_DIVISIONS.filter(d => d !== 'Semua Divisi')])).filter(Boolean).map(div => (
                     <option key={div} value={div}>{div}</option>
                   ))}
                 </select>
@@ -353,7 +353,7 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
                   onChange={handleChange}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-800 focus:bg-white focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
                 >
-                  {REGIONAL_BUREAUS.filter(b => b !== 'Semua Biro').map(bureau => (
+                  {Array.from(new Set([formData.bureau, ...REGIONAL_BUREAUS.filter(b => b !== 'Semua Biro')])).filter(Boolean).map(bureau => (
                     <option key={bureau} value={bureau}>{bureau}</option>
                   ))}
                 </select>

@@ -13,6 +13,7 @@ import {
 import { INITIAL_DIVISIONS, REGIONAL_BUREAUS, UKW_LEVELS } from '../data/initialData';
 
 export default function StaffFilters({
+  staffList = [],
   selectedDivision,
   setSelectedDivision,
   selectedBureau,
@@ -27,6 +28,17 @@ export default function StaffFilters({
   setActiveView,
   totalResults
 }) {
+  // Dynamically compute divisions from active staff list
+  const availableDivisions = React.useMemo(() => {
+    const list = Array.from(new Set(staffList.map(s => s.division))).filter(Boolean);
+    return ['Semua Divisi', ...list];
+  }, [staffList]);
+
+  // Dynamically compute bureaus from active staff list
+  const availableBureaus = React.useMemo(() => {
+    const list = Array.from(new Set(staffList.map(s => s.bureau))).filter(Boolean);
+    return ['Semua Biro', ...list];
+  }, [staffList]);
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 mb-6">
       
@@ -104,7 +116,7 @@ export default function StaffFilters({
 
       {/* Division Category Pills (Horizontal Scroll) */}
       <div className="pt-4 pb-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {INITIAL_DIVISIONS.map((div) => {
+        {availableDivisions.map((div) => {
           const isSelected = selectedDivision === div;
           return (
             <button
@@ -135,7 +147,7 @@ export default function StaffFilters({
             onChange={(e) => setSelectedBureau(e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs font-medium rounded-xl p-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
           >
-            {REGIONAL_BUREAUS.map((bureau) => (
+            {availableBureaus.map((bureau) => (
               <option key={bureau} value={bureau}>{bureau}</option>
             ))}
           </select>
