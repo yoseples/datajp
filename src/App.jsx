@@ -23,7 +23,8 @@ import StaffDetailModal from './components/StaffDetailModal';
 import IdCardModal from './components/IdCardModal';
 import PublicVerifyModal from './components/PublicVerifyModal';
 import SupabaseModal from './components/SupabaseModal';
-import LoginPage from './components/LoginPage';
+import LoginPage, { SYSTEM_ROLES } from './components/LoginPage';
+import WartawanPortal from './components/WartawanPortal';
 import { 
   Building2, 
   Globe, 
@@ -94,14 +95,11 @@ export default function App() {
           setStaffList(cloudData);
           saveStoredStaff(cloudData);
           setIsSupabaseActive(true);
-          showToast(`Terhubung ke Supabase Cloud (${cloudData.length} data dimuat)`, 'success');
         } else {
-          // Table empty, seed local data into Supabase
           const local = getStoredStaff();
           setStaffList(local);
           setIsSupabaseActive(true);
           await syncAllStaffToSupabase(local);
-          showToast(`Supabase aktif: Otomatis sinkronisasi ${local.length} data redaksi ke cloud!`, 'success');
         }
       } catch (err) {
         console.warn('Supabase fetch failed, falling back to local:', err);
@@ -120,6 +118,22 @@ export default function App() {
     loadDatabase();
   }, []);
 
+  // Check current user role
+  const isDeveloper = currentUser?.role === SYSTEM_ROLES.DEVELOPER;
+  const isAdmin = currentUser?.role === SYSTEM_ROLES.ADMIN || isDeveloper;
+  const isWartawan = currentUser?.role === SYSTEM_ROLES.WARTAWAN;
+
+  // Find Wartawan's own profile
+  const myStaffProfile = useMemo(() => {
+    if (!currentUser) return null;
+    // Match by staffId or by email or by name
+    return staffList.find(
+      s => (currentUser.staffId && s.id === currentUser.staffId) ||
+           (currentUser.email && s.email && s.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+           (currentUser.name && s.name.toLowerCase().includes(currentUser.name.toLowerCase()))
+    ) || staffList[0];
+  }, [currentUser, staffList]);
+
   // Auth Handlers
   const handleLoginSuccess = (user, remember) => {
     setCurrentUser(user);
@@ -131,7 +145,7 @@ export default function App() {
       spread: 70,
       origin: { y: 0.6 }
     });
-    showToast(`Selamat datang kembali, ${user.name}!`);
+    showToast(`Selamat datang, ${user.name}! (Role: ${user.role})`);
   };
 
   const handleLogout = () => {
@@ -142,7 +156,7 @@ export default function App() {
     }
   };
 
-  // Filter logic
+  // Filter logic for Admin & Developer
   const filteredStaff = useMemo(() => {
     return staffList.filter((staff) => {
       // Division filter
@@ -198,7 +212,6 @@ export default function App() {
     setStaffList(updated);
     saveStoredStaff(updated);
 
-    // If Supabase active, save to cloud
     if (isSupabaseActive) {
       try {
         await saveStaffToSupabase(staffData);
@@ -209,6 +222,11 @@ export default function App() {
   };
 
   const handleDeleteStaff = async (id) => {
+    if (!isAdmin) {
+      alert('Hanya Admin dan Developer yang memiliki hak menghapus data!');
+      return;
+    }
+
     const target = staffList.find(s => s.id === id);
     if (!target) return;
     if (confirm(`Apakah Anda yakin ingin menghapus "${target.name}" dari database redaksi?`)) {
@@ -228,6 +246,10 @@ export default function App() {
   };
 
   const handleResetData = () => {
+    if (!isDeveloper) {
+      alert('Hanya Developer yang dapat mereset database master!');
+      return;
+    }
     const freshData = resetToInitialStaff();
     setStaffList(freshData);
     if (isSupabaseActive) {
@@ -237,6 +259,10 @@ export default function App() {
   };
 
   const handleImportData = (newData) => {
+    if (!isDeveloper) {
+      alert('Hanya Developer yang dapat mengimpor database JSON mentah!');
+      return;
+    }
     setStaffList(newData);
     saveStoredStaff(newData);
     if (isSupabaseActive) {
@@ -266,13 +292,13 @@ export default function App() {
   };
 
   const handleOpenVerifyModal = (staff = null) => {
-    setSelectedStaffForVerify(staff || staffList[0]);
+    setSelectedStaffForVerify(staff || myStaffProfile || staffList[0]);
     setIsVerifyModalOpen(true);
   };
 
   // If user is not logged in, show LoginPage
   if (!currentUser) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return <LoginPage onLoginSuccess={handleLoginSuccess} allStaff={staffList} />;
   }
 
   return (
@@ -298,6 +324,7 @@ export default function App() {
         onImportData={handleImportData}
         onOpenVerifyModal={handleOpenVerifyModal}
         onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+        onOpenMyIdCard={() => handleOpenIdCardModal(myStaffProfile)}
         isSupabaseActive={isSupabaseActive}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -308,145 +335,166 @@ export default function App() {
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
         
-        {/* Hero Section Banner */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 p-6 sm:p-8 text-white shadow-xl mb-8 border border-slate-800">
-          <div className="relative z-10 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                Sistem Bank Data Terpadu Jarrakpos
-              </div>
-              
-              <div 
-                onClick={() => setIsSupabaseModalOpen(true)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider cursor-pointer transition-all ${
-                  isSupabaseActive
-                    ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900'
-                    : 'bg-amber-950/80 border-amber-500/50 text-amber-300 hover:bg-amber-900'
-                }`}
-              >
-                <Database className="w-3 h-3" />
-                <span>{isSupabaseActive ? 'Cloud Supabase Aktif' : 'Penyimpanan Lokal (Klik untuk Setup Supabase)'}</span>
-              </div>
-            </div>
-
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-              Database Dewan Redaksi & Bank Data Wartawan
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-              Pusat inventarisasi resmi jajaran pimpinan redaksi, dewan penasehat, redaktur, wartawan biro daerah, serta sertifikasi kompetensi pers terintegrasi <strong>jarrakpos.com</strong>.
-            </p>
-          </div>
-
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-rose-900/40 transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              Tambah Personil Redaksi
-            </button>
-            <button
-              onClick={() => handleOpenVerifyModal(null)}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-slate-700 transition-all"
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Verifikasi QR Kartu Pers
-            </button>
-            <button
-              onClick={() => setIsSupabaseModalOpen(true)}
-              className="flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-emerald-700/60 transition-all"
-            >
-              <Database className="w-4 h-4 text-emerald-400" />
-              Kelola Cloud Supabase
-            </button>
-          </div>
-
-          {/* Decorative Red Glow */}
-          <div className="absolute top-0 right-0 w-80 h-80 bg-rose-600/20 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        </div>
-
-        {/* Dashboard Metric Statistics */}
-        <DashboardStats staffList={staffList} />
-
-        {/* Filters and Search Bar */}
-        <StaffFilters
-          selectedDivision={selectedDivision}
-          setSelectedDivision={setSelectedDivision}
-          selectedBureau={selectedBureau}
-          setSelectedBureau={setSelectedBureau}
-          selectedUkw={selectedUkw}
-          setSelectedUkw={setSelectedUkw}
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          activeView={activeView}
-          setActiveView={setActiveView}
-          totalResults={filteredStaff.length}
-        />
-
-        {/* Dynamic Main View */}
-        {filteredStaff.length === 0 ? (
-          <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/90 shadow-sm max-w-lg mx-auto my-10">
-            <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900">Tidak Ada Data Ditemukan</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Tidak ada anggota redaksi yang sesuai dengan filter atau kata kunci pencarian.
-            </p>
-            <button
-              onClick={() => {
-                setSelectedDivision('Semua Divisi');
-                setSelectedBureau('Semua Biro');
-                setSelectedUkw('Semua UKW');
-                setSelectedStatus('Semua Status');
-                setSearchQuery('');
-              }}
-              className="mt-4 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all"
-            >
-              Reset Semua Filter
-            </button>
-          </div>
+        {/* ============================================================================== */}
+        {/* CASE 1: ROLE WARTAWAN -> HANYA MELIHAT & MENGELOLA PROFILNYA SENDIRI */}
+        {/* ============================================================================== */}
+        {isWartawan ? (
+          <WartawanPortal
+            staff={myStaffProfile}
+            onOpenIdCard={handleOpenIdCardModal}
+            onOpenVerify={handleOpenVerifyModal}
+            onEditProfile={handleOpenEditModal}
+          />
         ) : (
+          /* ============================================================================== */
+          /* CASE 2: ROLE ADMIN & DEVELOPER -> FULL ACCESS KE BAGAN, TABEL & KARTU */
+          /* ============================================================================== */
           <>
-            {/* View 1: Card Grid */}
-            {activeView === 'grid' && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mb-12">
-                {filteredStaff.map((staff) => (
-                  <StaffCard
-                    key={staff.id}
-                    staff={staff}
+            {/* Hero Section Banner */}
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-rose-950 p-6 sm:p-8 text-white shadow-xl mb-8 border border-slate-800">
+              <div className="relative z-10 max-w-3xl">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Portal {currentUser?.role || 'Admin'} Jarrakpos
+                  </div>
+                  
+                  {isDeveloper && (
+                    <div 
+                      onClick={() => setIsSupabaseModalOpen(true)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider cursor-pointer transition-all ${
+                        isSupabaseActive
+                          ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900'
+                          : 'bg-amber-950/80 border-amber-500/50 text-amber-300 hover:bg-amber-900'
+                      }`}
+                    >
+                      <Database className="w-3 h-3" />
+                      <span>{isSupabaseActive ? 'Cloud Supabase Aktif' : 'Penyimpanan Lokal (Klik Setup Supabase)'}</span>
+                    </div>
+                  )}
+                </div>
+
+                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                  Database Dewan Redaksi & Bank Data Wartawan
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+                  Pusat inventarisasi resmi jajaran pimpinan redaksi, dewan penasehat, redaktur, wartawan biro daerah, serta sertifikasi kompetensi pers terintegrasi <strong>jarrakpos.com</strong>.
+                </p>
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={handleOpenAddModal}
+                  className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-rose-900/40 transition-all active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  Tambah Personil Redaksi
+                </button>
+                <button
+                  onClick={() => handleOpenVerifyModal(null)}
+                  className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-slate-700 transition-all"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  Verifikasi QR Kartu Pers
+                </button>
+                {isDeveloper && (
+                  <button
+                    onClick={() => setIsSupabaseModalOpen(true)}
+                    className="flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-emerald-700/60 transition-all"
+                  >
+                    <Database className="w-4 h-4 text-emerald-400" />
+                    Kelola Cloud Supabase
+                  </button>
+                )}
+              </div>
+
+              {/* Decorative Red Glow */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-rose-600/20 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+            </div>
+
+            {/* Dashboard Metric Statistics */}
+            <DashboardStats staffList={staffList} />
+
+            {/* Filters and Search Bar */}
+            <StaffFilters
+              selectedDivision={selectedDivision}
+              setSelectedDivision={setSelectedDivision}
+              selectedBureau={selectedBureau}
+              setSelectedBureau={setSelectedBureau}
+              selectedUkw={selectedUkw}
+              setSelectedUkw={setSelectedUkw}
+              selectedStatus={selectedStatus}
+              setSelectedStatus={setSelectedStatus}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              activeView={activeView}
+              setActiveView={setActiveView}
+              totalResults={filteredStaff.length}
+            />
+
+            {/* Dynamic Main View for Admin & Developer */}
+            {filteredStaff.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-slate-200/90 shadow-sm max-w-lg mx-auto my-10">
+                <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900">Tidak Ada Data Ditemukan</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Tidak ada anggota redaksi yang sesuai dengan filter atau kata kunci pencarian.
+                </p>
+                <button
+                  onClick={() => {
+                    setSelectedDivision('Semua Divisi');
+                    setSelectedBureau('Semua Biro');
+                    setSelectedUkw('Semua UKW');
+                    setSelectedStatus('Semua Status');
+                    setSearchQuery('');
+                  }}
+                  className="mt-4 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-all"
+                >
+                  Reset Semua Filter
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* View 1: Bagan Struktur Redaksi (Default) */}
+                {activeView === 'orgchart' && (
+                  <OrgChart
+                    staffList={filteredStaff}
+                    onViewDetail={handleOpenDetailModal}
+                    onViewIdCard={handleOpenIdCardModal}
+                  />
+                )}
+
+                {/* View 2: Table */}
+                {activeView === 'table' && (
+                  <StaffTable
+                    staffList={filteredStaff}
                     onViewDetail={handleOpenDetailModal}
                     onViewIdCard={handleOpenIdCardModal}
                     onVerify={handleOpenVerifyModal}
                     onEdit={handleOpenEditModal}
                     onDelete={handleDeleteStaff}
                   />
-                ))}
-              </div>
-            )}
+                )}
 
-            {/* View 2: Table */}
-            {activeView === 'table' && (
-              <StaffTable
-                staffList={filteredStaff}
-                onViewDetail={handleOpenDetailModal}
-                onViewIdCard={handleOpenIdCardModal}
-                onVerify={handleOpenVerifyModal}
-                onEdit={handleOpenEditModal}
-                onDelete={handleDeleteStaff}
-              />
-            )}
-
-            {/* View 3: Org Chart */}
-            {activeView === 'orgchart' && (
-              <OrgChart
-                staffList={filteredStaff}
-                onViewDetail={handleOpenDetailModal}
-                onViewIdCard={handleOpenIdCardModal}
-              />
+                {/* View 3: Card Grid */}
+                {activeView === 'grid' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mb-12">
+                    {filteredStaff.map((staff) => (
+                      <StaffCard
+                        key={staff.id}
+                        staff={staff}
+                        onViewDetail={handleOpenDetailModal}
+                        onViewIdCard={handleOpenIdCardModal}
+                        onVerify={handleOpenVerifyModal}
+                        onEdit={handleOpenEditModal}
+                        onDelete={handleDeleteStaff}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -513,12 +561,14 @@ export default function App() {
         onSelectStaff={(s) => setSelectedStaffForVerify(s)}
       />
 
-      <SupabaseModal
-        isOpen={isSupabaseModalOpen}
-        onClose={() => setIsSupabaseModalOpen(false)}
-        staffList={staffList}
-        onSupabaseConfigured={loadDatabase}
-      />
+      {isDeveloper && (
+        <SupabaseModal
+          isOpen={isSupabaseModalOpen}
+          onClose={() => setIsSupabaseModalOpen(false)}
+          staffList={staffList}
+          onSupabaseConfigured={loadDatabase}
+        />
+      )}
 
     </div>
   );

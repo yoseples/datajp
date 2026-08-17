@@ -12,11 +12,11 @@ import {
   Users,
   LogOut,
   UserCheck,
-  Cloud,
-  CloudCheck
+  CreditCard,
+  User
 } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/storage';
-import { getSupabaseConfig } from '../utils/supabaseClient';
+import { SYSTEM_ROLES } from './LoginPage';
 import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
 export default function Navbar({ 
@@ -28,6 +28,7 @@ export default function Navbar({
   onImportData, 
   onOpenVerifyModal,
   onOpenSupabaseModal,
+  onOpenMyIdCard,
   isSupabaseActive,
   searchQuery,
   setSearchQuery,
@@ -35,6 +36,10 @@ export default function Navbar({
   setActiveView
 }) {
   const fileInputRef = useRef(null);
+
+  const isDeveloper = currentUser?.role === SYSTEM_ROLES.DEVELOPER;
+  const isAdmin = currentUser?.role === SYSTEM_ROLES.ADMIN || isDeveloper;
+  const isWartawan = currentUser?.role === SYSTEM_ROLES.WARTAWAN;
 
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
@@ -78,69 +83,92 @@ export default function Navbar({
                 <span className="font-extrabold text-xl tracking-tight text-white flex items-center gap-1.5">
                   JARRAK<span className="text-rose-500">POS</span>.COM
                 </span>
-                <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider bg-rose-950 text-rose-300 border border-rose-800/80 rounded-full">
-                  Redaksi & HRD
+                <span className={`px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full border ${
+                  isDeveloper 
+                    ? 'bg-purple-950 text-purple-300 border-purple-700'
+                    : isAdmin 
+                    ? 'bg-rose-950 text-rose-300 border-rose-800'
+                    : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                }`}>
+                  {currentUser?.role || 'Redaksi'}
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-medium hidden sm:block">
-                Sistem Bank Data & Kartu Pers Dewan Redaksi Nasional
+                {isWartawan ? 'Portal Mandiri Karyawan & Jurnalis' : 'Sistem Bank Data & Kartu Pers Dewan Redaksi Nasional'}
               </p>
             </div>
           </div>
 
-          {/* Quick Search in Navbar (Desktop) */}
-          <div className="hidden md:flex items-center flex-1 max-w-xs xl:max-w-sm mx-4">
-            <div className="relative w-full">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari nama, NIP, biro..."
-                className="w-full bg-slate-800/90 hover:bg-slate-800 text-slate-100 placeholder-slate-400 text-sm rounded-xl pl-10 pr-4 py-2 border border-slate-700 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              )}
+          {/* Quick Search in Navbar (Only for Admin & Developer) */}
+          {isAdmin && (
+            <div className="hidden md:flex items-center flex-1 max-w-xs xl:max-w-sm mx-4">
+              <div className="relative w-full">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari nama, NIP, biro..."
+                  className="w-full bg-slate-800/90 hover:bg-slate-800 text-slate-100 placeholder-slate-400 text-sm rounded-xl pl-10 pr-4 py-2 border border-slate-700 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Action Buttons & Cloud Status */}
+          {/* Action Buttons based on Role */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             
-            {/* Supabase Status / Setup Button */}
-            <button
-              onClick={onOpenSupabaseModal}
-              title={isSupabaseActive ? "Supabase Cloud Database Terhubung" : "Konfigurasi Database Cloud Supabase"}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                isSupabaseActive
-                  ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60 hover:bg-emerald-900 shadow-sm'
-                  : 'bg-slate-800 text-amber-300 border-amber-500/40 hover:bg-slate-700'
-              }`}
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                {isSupabaseActive ? 'Cloud Supabase' : 'Setup Supabase'}
-              </span>
-              <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-            </button>
+            {/* DEVELOPER ONLY: Supabase Setup Button */}
+            {isDeveloper && (
+              <button
+                onClick={onOpenSupabaseModal}
+                title={isSupabaseActive ? "Supabase Cloud Database Terhubung" : "Konfigurasi Database Cloud Supabase"}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
+                  isSupabaseActive
+                    ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/60 hover:bg-emerald-900 shadow-sm'
+                    : 'bg-slate-800 text-amber-300 border-amber-500/40 hover:bg-slate-700'
+                }`}
+              >
+                <Database className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {isSupabaseActive ? 'Cloud Supabase' : 'Setup Supabase'}
+                </span>
+                <span className={`w-2 h-2 rounded-full ${isSupabaseActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+              </button>
+            )}
 
-            {/* Direct Add Button */}
-            <button
-              onClick={onOpenAddModal}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-rose-900/30 transition-all active:scale-95"
-            >
-              <UserPlus className="w-4 h-4" />
-              <span className="hidden sm:inline">Tambah Redaksi</span>
-              <span className="sm:hidden">Tambah</span>
-            </button>
+            {/* ADMIN & DEVELOPER: Add Staff Button */}
+            {isAdmin && (
+              <button
+                onClick={onOpenAddModal}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-semibold text-xs sm:text-sm px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-rose-900/30 transition-all active:scale-95"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span className="hidden sm:inline">Tambah Redaksi</span>
+                <span className="sm:hidden">Tambah</span>
+              </button>
+            )}
 
-            {/* Quick Verify Modal Trigger */}
+            {/* WARTAWAN: My ID Card Quick Button */}
+            {isWartawan && (
+              <button
+                onClick={onOpenMyIdCard}
+                className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-md shadow-rose-900/30 transition-all active:scale-95"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>KTA Digital Saya</span>
+              </button>
+            )}
+
+            {/* Public QR Check Modal Trigger */}
             <button
               onClick={() => onOpenVerifyModal(null)}
               title="Cek Verifikasi Wartawan Publik"
@@ -150,40 +178,46 @@ export default function Navbar({
               <span className="hidden lg:inline">Validasi KTA</span>
             </button>
 
-            {/* Export Dropdown / Buttons */}
-            <div className="hidden lg:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
-              <button
-                onClick={() => exportToCSV(staffList)}
-                title="Export Data ke Excel (CSV)"
-                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2 py-1 rounded-lg text-xs font-medium transition-all"
-              >
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                CSV
-              </button>
-              <button
-                onClick={() => exportToJSON(staffList)}
-                title="Backup Seluruh Database (JSON)"
-                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2 py-1 rounded-lg text-xs font-medium transition-all"
-              >
-                <Database className="w-3.5 h-3.5 text-amber-400" />
-                Backup
-              </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                title="Restore / Import JSON"
-                className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2 py-1 rounded-lg text-xs font-medium transition-all"
-              >
-                <Upload className="w-3.5 h-3.5 text-sky-400" />
-                Restore
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </div>
+            {/* ADMIN & DEVELOPER: Export CSV */}
+            {isAdmin && (
+              <div className="hidden lg:flex items-center gap-1 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+                <button
+                  onClick={() => exportToCSV(staffList)}
+                  title="Export Data ke Excel (CSV)"
+                  className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                >
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  CSV
+                </button>
+                {isDeveloper && (
+                  <>
+                    <button
+                      onClick={() => exportToJSON(staffList)}
+                      title="Backup Seluruh Database (JSON)"
+                      className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                    >
+                      <Database className="w-3.5 h-3.5 text-amber-400" />
+                      Backup
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      title="Restore / Import JSON"
+                      className="flex items-center gap-1 text-slate-300 hover:text-white hover:bg-slate-700 px-2.5 py-1 rounded-lg text-xs font-medium transition-all"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-sky-400" />
+                      Restore
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".json"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </>
+                )}
+              </div>
+            )}
 
             {/* User Profile Info & Logout */}
             {currentUser && (
@@ -207,18 +241,20 @@ export default function Navbar({
               </div>
             )}
 
-            {/* Reset Button */}
-            <button
-              onClick={() => {
-                if (confirm('Kembalikan database ke data bawaan Dewan Redaksi Jarrakpos?')) {
-                  onResetData();
-                }
-              }}
-              title="Reset ke Data Bawaan"
-              className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-all"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
+            {/* DEVELOPER ONLY: Reset Button */}
+            {isDeveloper && (
+              <button
+                onClick={() => {
+                  if (confirm('Kembalikan database ke data bawaan Dewan Redaksi Jarrakpos?')) {
+                    onResetData();
+                  }
+                }}
+                title="Reset ke Data Bawaan (Developer Only)"
+                className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-xl transition-all"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            )}
 
           </div>
 
