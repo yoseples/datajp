@@ -105,12 +105,23 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
   };
 
   // Handle local image file upload & resize to base64
+  const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB limit
+
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
       alert('Mohon pilih file gambar yang valid (JPG, PNG, WebP)!');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Limit photo file size to 1MB
+    if (file.size > MAX_FILE_SIZE) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      alert(`Ukuran foto terlalu besar (${sizeMB} MB)! Maksimal batas ukuran foto adalah 1 MB. Silakan pilih foto lain atau kompres foto Anda terlebih dahulu.`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
@@ -237,7 +248,7 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
                       <span>Upload Foto Baru</span>
                     </button>
                     <span className="text-[11px] text-slate-500 font-medium">
-                      JPG, PNG, atau WebP (Otomatis Dioptimasi)
+                      JPG, PNG, atau WebP (Maksimal 1 MB • Otomatis Dioptimasi)
                     </span>
                     <input
                       ref={fileInputRef}
