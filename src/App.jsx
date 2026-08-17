@@ -67,32 +67,38 @@ export default function App() {
 
   // Active Media Platform State: 'hub' | 'jarrakpos' | 'jarrakpostv' | 'jarrakpodcast'
   const [currentPlatform, setCurrentPlatform] = useState(() => {
-    return localStorage.getItem(SELECTED_PLATFORM_KEY) || 'hub';
+    try {
+      return localStorage.getItem(SELECTED_PLATFORM_KEY) || 'hub';
+    } catch {
+      return 'hub';
+    }
   });
 
-  // Master State per platform
+  // Master State per platform with safe initializers
   const [platformData, setPlatformData] = useState(() => {
-    // Load each platform's stored staff
     const loadPlatform = (key, initial) => {
       try {
         const item = localStorage.getItem(key);
-        return item ? JSON.parse(item) : initial;
+        if (!item) return initial;
+        const parsed = JSON.parse(item);
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : initial;
       } catch {
         return initial;
       }
     };
 
     return {
-      jarrakpos: getStoredStaff(),
+      jarrakpos: getStoredStaff() || INITIAL_STAFF,
       jarrakpostv: loadPlatform(MEDIA_PLATFORMS.JARRAKPOSTV.storageKey, INITIAL_JARRAKPOSTV_STAFF),
       jarrakpodcast: loadPlatform(MEDIA_PLATFORMS.JARRAKPODCAST.storageKey, INITIAL_JARRAKPODCAST_STAFF)
     };
   });
 
   const activeStaffList = useMemo(() => {
-    if (currentPlatform === 'jarrakpostv') return platformData.jarrakpostv;
-    if (currentPlatform === 'jarrakpodcast') return platformData.jarrakpodcast;
-    return platformData.jarrakpos;
+    if (!platformData) return INITIAL_STAFF;
+    if (currentPlatform === 'jarrakpostv') return platformData.jarrakpostv || INITIAL_JARRAKPOSTV_STAFF;
+    if (currentPlatform === 'jarrakpodcast') return platformData.jarrakpodcast || INITIAL_JARRAKPODCAST_STAFF;
+    return platformData.jarrakpos || INITIAL_STAFF;
   }, [platformData, currentPlatform]);
 
   const [activeView, setActiveView] = useState('orgchart'); // 'orgchart' | 'table' | 'grid'
@@ -148,7 +154,9 @@ export default function App() {
       targetStaffSetter(staff);
     }
     setter(true);
-    window.history.pushState({ modal: modalName }, '');
+    try {
+      window.history.pushState({ modal: modalName }, '');
+    } catch {}
   };
 
   // Listen to Browser Back Button (popstate event) -> Return to Home
@@ -187,26 +195,30 @@ export default function App() {
   // Handle Platform Switch
   const handleSelectPlatform = (platformId) => {
     setCurrentPlatform(platformId);
-    localStorage.setItem(SELECTED_PLATFORM_KEY, platformId);
+    try {
+      localStorage.setItem(SELECTED_PLATFORM_KEY, platformId);
+    } catch {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast(`Beralih ke Portal Redaksi: ${MEDIA_PLATFORMS[platformId.toUpperCase()]?.name}`);
+    showToast(`Beralih ke Portal Redaksi: ${MEDIA_PLATFORMS[platformId.toUpperCase()]?.name || platformId}`);
   };
 
   // Find Wartawan's own profile
   const myStaffProfile = useMemo(() => {
     if (!currentUser) return null;
-    return activeStaffList.find(
+    const list = Array.isArray(activeStaffList) ? activeStaffList : INITIAL_STAFF;
+    return list.find(
       s => (currentUser.staffId && s.id === currentUser.staffId) ||
            (currentUser.email && s.email && s.email.toLowerCase() === currentUser.email.toLowerCase()) ||
-           (currentUser.name && s.name.toLowerCase().includes(currentUser.name.toLowerCase()))
-    ) || activeStaffList[0];
+           (currentUser.name && s.name?.toLowerCase().includes(currentUser.name.toLowerCase()))
+    ) || list[0] || null;
   }, [currentUser, activeStaffList]);
 
   // Expiring KTA list for active platform
   const expiringStaffList = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    return activeStaffList.filter(s => {
-      if (!s.ktaExpiry) return false;
+    const list = Array.isArray(activeStaffList) ? activeStaffList : [];
+    return list.filter(s => {
+      if (!s || !s.ktaExpiry) return false;
       const expYear = parseInt(s.ktaExpiry.slice(0, 4));
       return expYear <= currentYear + 1;
     });
@@ -215,11 +227,13 @@ export default function App() {
   // Auth Handlers
   const handleLoginSuccess = (user, remember) => {
     setCurrentUser(user);
-    setCurrentPlatform('hub'); // Take user to Media Hub Selector after login
-    localStorage.setItem(SELECTED_PLATFORM_KEY, 'hub');
-    if (remember) {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    }
+    setCurrentPlatform('hub');
+    try {
+      localStorage.setItem(SELECTED_PLATFORM_KEY, 'hub');
+      if (remember) {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+      }
+    } catch {}
     confetti({
       particleCount: 80,
       spread: 70,
@@ -232,8 +246,10 @@ export default function App() {
     if (confirm('Apakah Anda ingin keluar dari sistem Bank Data Jarrakpos?')) {
       setCurrentUser(null);
       setCurrentPlatform('hub');
-      localStorage.removeItem(USER_STORAGE_KEY);
-      localStorage.removeItem(SELECTED_PLATFORM_KEY);
+      try {
+        localStorage.removeItem(USER_STORAGE_KEY);
+        localStorage.removeItem(SELECTED_PLATFORM_KEY);
+      } catch {}
       returnToHome();
       showToast('Anda telah keluar dari sistem.', 'info');
     }
@@ -241,12 +257,14 @@ export default function App() {
 
   // Filter logic for Admin & Developer
   const filteredStaff = useMemo(() => {
-    return activeStaffList.filter((staff) => {
+    const list = Array.isArray(activeStaffList) ? activeStaffList : [];
+    return list.filter((staff) => {
+      if (!staff) return false;
       if (selectedDivision !== 'Semua Divisi' && staff.division !== selectedDivision) return false;
       if (selectedBureau !== 'Semua Biro' && staff.bureau !== selectedBureau) return false;
       if (selectedUkw !== 'Semua UKW' && staff.ukwLevel !== selectedUkw) return false;
       if (selectedStatus !== 'Semua Status' && staff.status !== selectedStatus) return false;
-      if (searchQuery.trim()) {
+      if (searchQuery && searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchName = staff.name?.toLowerCase().includes(q);
         const matchRole = staff.role?.toLowerCase().includes(q);
@@ -262,7 +280,7 @@ export default function App() {
   // Handlers per platform
   const handleSaveStaff = async (staffData) => {
     const pKey = currentPlatform === 'jarrakpostv' ? 'jarrakpostv' : currentPlatform === 'jarrakpodcast' ? 'jarrakpodcast' : 'jarrakpos';
-    const list = platformData[pKey];
+    const list = platformData[pKey] || [];
     let updated;
     const exists = list.some(s => s.id === staffData.id);
     
@@ -281,9 +299,10 @@ export default function App() {
     
     setPlatformData(prev => ({ ...prev, [pKey]: updated }));
     
-    // Save to respective localStorage
-    const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
-    localStorage.setItem(storageKey, JSON.stringify(updated));
+    try {
+      const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    } catch {}
 
     if (pKey === 'jarrakpos' && isSupabaseActive) {
       try {
@@ -316,15 +335,16 @@ export default function App() {
     }
 
     const pKey = currentPlatform === 'jarrakpostv' ? 'jarrakpostv' : currentPlatform === 'jarrakpodcast' ? 'jarrakpodcast' : 'jarrakpos';
-    const list = platformData[pKey];
+    const list = platformData[pKey] || [];
     const target = list.find(s => s.id === id);
     if (!target) return;
     if (confirm(`Apakah Anda yakin ingin menghapus "${target.name}" dari database redaksi ${MEDIA_PLATFORMS[pKey.toUpperCase()]?.name}?`)) {
       const updated = list.filter(s => s.id !== id);
       setPlatformData(prev => ({ ...prev, [pKey]: updated }));
-      
-      const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
-      localStorage.setItem(storageKey, JSON.stringify(updated));
+      try {
+        const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      } catch {}
       showToast(`"${target.name}" telah dihapus.`, 'info');
     }
   };
@@ -340,8 +360,10 @@ export default function App() {
     if (pKey === 'jarrakpodcast') freshData = INITIAL_JARRAKPODCAST_STAFF;
 
     setPlatformData(prev => ({ ...prev, [pKey]: freshData }));
-    const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
-    localStorage.setItem(storageKey, JSON.stringify(freshData));
+    try {
+      const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+      localStorage.setItem(storageKey, JSON.stringify(freshData));
+    } catch {}
     showToast(`Database ${MEDIA_PLATFORMS[pKey.toUpperCase()]?.name} berhasil direset.`);
   };
 
@@ -352,8 +374,10 @@ export default function App() {
     }
     const pKey = currentPlatform === 'jarrakpostv' ? 'jarrakpostv' : currentPlatform === 'jarrakpodcast' ? 'jarrakpodcast' : 'jarrakpos';
     setPlatformData(prev => ({ ...prev, [pKey]: newData }));
-    const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
-    localStorage.setItem(storageKey, JSON.stringify(newData));
+    try {
+      const storageKey = MEDIA_PLATFORMS[pKey.toUpperCase()]?.storageKey || 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
+      localStorage.setItem(storageKey, JSON.stringify(newData));
+    } catch {}
     showToast(`Berhasil mengimpor ${newData.length} data personil!`);
   };
 
@@ -376,7 +400,7 @@ export default function App() {
   };
 
   const handleOpenVerifyModal = (staff = null) => {
-    openModalWithHistory(setIsVerifyModalOpen, staff || myStaffProfile || activeStaffList[0], setSelectedStaffForVerify, 'verify-qr');
+    openModalWithHistory(setIsVerifyModalOpen, staff || myStaffProfile || (Array.isArray(activeStaffList) ? activeStaffList[0] : null), setSelectedStaffForVerify, 'verify-qr');
   };
 
   const handleOpenSupabaseModal = () => {
@@ -389,7 +413,7 @@ export default function App() {
 
   // 1. IF NOT LOGGED IN -> Show LoginPage
   if (!currentUser) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} allStaff={activeStaffList} />;
+    return <LoginPage onLoginSuccess={handleLoginSuccess} allStaff={activeStaffList || []} />;
   }
 
   // 2. IF ON MEDIA HUB -> Show MediaHubSelector (Selection of Jarrakpos.com, JarrakposTV, Jarrak Podcast)
@@ -400,15 +424,15 @@ export default function App() {
         onSelectPlatform={handleSelectPlatform}
         onLogout={handleLogout}
         platformStaffCounts={{
-          jarrakpos: platformData.jarrakpos.length,
-          jarrakpostv: platformData.jarrakpostv.length,
-          jarrakpodcast: platformData.jarrakpodcast.length
+          jarrakpos: platformData?.jarrakpos?.length || 50,
+          jarrakpostv: platformData?.jarrakpostv?.length || 6,
+          jarrakpodcast: platformData?.jarrakpodcast?.length || 4
         }}
       />
     );
   }
 
-  const activePlatformInfo = MEDIA_PLATFORMS[currentPlatform.toUpperCase()] || MEDIA_PLATFORMS.JARRAKPOS;
+  const activePlatformInfo = MEDIA_PLATFORMS[currentPlatform?.toUpperCase()] || MEDIA_PLATFORMS.JARRAKPOS;
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col justify-between">
@@ -430,7 +454,7 @@ export default function App() {
         onSwitchPlatform={handleSelectPlatform}
         onOpenHub={() => setCurrentPlatform('hub')}
         onLogout={handleLogout}
-        staffList={activeStaffList}
+        staffList={activeStaffList || []}
         onOpenAddModal={handleOpenAddModal}
         onResetData={handleResetData}
         onImportData={handleImportData}
@@ -533,12 +557,13 @@ export default function App() {
 
             {/* Dashboard Metric Statistics */}
             <DashboardStats 
-              staffList={activeStaffList} 
+              staffList={activeStaffList || []} 
               onOpenExpiryModal={handleOpenExpiryModal}
             />
 
             {/* Filters and Search Bar */}
             <StaffFilters
+              staffList={activeStaffList || []}
               selectedDivision={selectedDivision}
               setSelectedDivision={setSelectedDivision}
               selectedBureau={selectedBureau}
@@ -689,7 +714,7 @@ export default function App() {
 
       <PublicVerifyModal
         staff={selectedStaffForVerify}
-        allStaff={activeStaffList}
+        allStaff={activeStaffList || []}
         isOpen={isVerifyModalOpen}
         onClose={returnToHome}
         onSelectStaff={(s) => setSelectedStaffForVerify(s)}
@@ -708,8 +733,8 @@ export default function App() {
         <SupabaseModal
           isOpen={isSupabaseModalOpen}
           onClose={returnToHome}
-          staffList={activeStaffList}
-          onSupabaseConfigured={loadDatabase}
+          staffList={activeStaffList || []}
+          onSupabaseConfigured={() => {}}
         />
       )}
 
