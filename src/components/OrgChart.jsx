@@ -6,7 +6,8 @@ import {
   CreditCard, 
   Eye, 
   Users,
-  ChevronDown
+  ChevronDown,
+  UserCheck
 } from 'lucide-react';
 
 export default function OrgChart({ staffList, onViewDetail, onViewIdCard }) {
@@ -22,18 +23,27 @@ export default function OrgChart({ staffList, onViewDetail, onViewIdCard }) {
       key={staff.id} 
       className="bg-white rounded-2xl border-2 border-slate-200 hover:border-rose-500 shadow-sm hover:shadow-xl transition-all duration-300 p-4 w-72 flex flex-col justify-between shrink-0 group relative"
     >
-      <div className="flex items-start gap-3">
-        <img
-          src={staff.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
-          alt={staff.name}
-          className="w-12 h-12 rounded-xl object-cover border border-rose-400 shrink-0"
-          onError={(e) => {
-            e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80';
-          }}
-        />
+      {/* Clickable Header & Profile Trigger */}
+      <div 
+        onClick={() => onViewDetail(staff)}
+        className="flex items-start gap-3 cursor-pointer select-none"
+        title={`Klik untuk melihat profil lengkap ${staff.name}`}
+      >
+        <div className="relative shrink-0">
+          <img
+            src={staff.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
+            alt={staff.name}
+            className="w-12 h-12 rounded-xl object-cover border border-rose-400 group-hover:scale-105 transition-transform"
+            onError={(e) => {
+              e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80';
+            }}
+          />
+          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" title="Aktif"></div>
+        </div>
+
         <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-slate-900 text-xs leading-snug truncate group-hover:text-rose-600 transition-colors">
-            {staff.name}
+          <h4 className="font-bold text-slate-900 text-xs leading-snug truncate group-hover:text-rose-600 transition-colors flex items-center gap-1">
+            <span>{staff.name}</span>
           </h4>
           <p className="text-[11px] font-semibold text-rose-700 mt-0.5 truncate">
             {staff.role}
@@ -44,24 +54,33 @@ export default function OrgChart({ staffList, onViewDetail, onViewIdCard }) {
         </div>
       </div>
 
+      {/* Footer Controls */}
       <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
         <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
           {staff.ukwLevel || 'Belum UKW'}
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
-            onClick={() => onViewIdCard(staff)}
-            className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors"
-            title="Kartu Pers KTA"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetail(staff);
+            }}
+            className="flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-slate-700 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+            title="Lihat Profil Lengkap"
+          >
+            <Eye className="w-3.5 h-3.5 text-rose-500" />
+            <span>Profil</span>
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewIdCard(staff);
+            }}
+            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition-colors"
+            title="Buka KTA Digital"
           >
             <CreditCard className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={() => onViewDetail(staff)}
-            className="p-1 text-slate-400 hover:text-blue-600 rounded transition-colors"
-            title="Lihat Detail"
-          >
-            <Eye className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
@@ -79,7 +98,7 @@ export default function OrgChart({ staffList, onViewDetail, onViewIdCard }) {
           Bagan Struktur Organisasi Dewan Redaksi
         </h2>
         <p className="text-slate-400 text-xs sm:text-sm mt-1">
-          Susunan penanggung jawab hukum, dewan pembina, editorial harian, redaktur desk, dan reporter biro daerah.
+          Klik pada nama atau foto anggota untuk membuka berkas profil &amp; dossier lengkap personil.
         </p>
       </div>
 
