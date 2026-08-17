@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Save, 
@@ -11,7 +11,10 @@ import {
   Calendar, 
   FileText,
   Image as ImageIcon,
-  Shield
+  Shield,
+  UploadCloud,
+  Camera,
+  RefreshCw
 } from 'lucide-react';
 import { INITIAL_DIVISIONS, REGIONAL_BUREAUS, UKW_LEVELS } from '../data/initialData';
 
@@ -25,11 +28,12 @@ const SAMPLE_AVATARS = [
 ];
 
 export default function StaffFormModal({ isOpen, onClose, onSave, initialData }) {
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     id: '',
     name: '',
     role: '',
-    division: 'Jurnalis / Wartawan',
+    division: 'Biro & Kontributor Daerah',
     bureau: 'Kantor Pusat (Denpasar - Bali)',
     hierarchyLevel: 5,
     nip: '',
@@ -57,7 +61,7 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
         id: randomId,
         name: '',
         role: '',
-        division: 'Jurnalis / Wartawan',
+        division: 'Biro & Kontributor Daerah',
         bureau: 'Kantor Pusat (Denpasar - Bali)',
         hierarchyLevel: 5,
         nip: 'JP-PERS-' + Math.floor(100000 + Math.random() * 900000),
@@ -87,9 +91,9 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
     let hierarchyLevel = formData.hierarchyLevel;
     if (name === 'division') {
       if (value.includes('Pembina') || value.includes('Penasehat')) hierarchyLevel = 1;
-      else if (value.includes('Pimpinan Redaksi')) hierarchyLevel = 2;
+      else if (value.includes('Direksi') || value.includes('Pimpinan Redaksi')) hierarchyLevel = 2;
       else if (value.includes('Redaktur Pelaksana')) hierarchyLevel = 3;
-      else if (value.includes('Redaktur Desk') || value.includes('Koordinator')) hierarchyLevel = 4;
+      else if (value.includes('Redaktur') || value.includes('Biro Nasional') || value.includes('Sekretariat') || value.includes('Keuangan')) hierarchyLevel = 4;
       else hierarchyLevel = 5;
     }
 
@@ -98,6 +102,51 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
       [name]: value,
       ...(name === 'division' ? { hierarchyLevel } : {})
     }));
+  };
+
+  // Handle local image file upload & resize to base64
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Mohon pilih file gambar yang valid (JPG, PNG, WebP)!');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize image to max 400x400 for fast loading and optimal storage
+        const canvas = document.createElement('canvas');
+        const maxDim = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        setFormData(prev => ({ ...prev, photoUrl: dataUrl }));
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = (e) => {
@@ -140,11 +189,110 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 max-h-[80vh] overflow-y-auto space-y-6 text-xs sm:text-sm">
           
-          {/* Section 1: Data Identitas Pokok */}
+          {/* Section 1: Upload Foto Profil Resmi */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5 pb-2 border-b border-slate-200">
+              <Camera className="w-4 h-4 text-rose-600" />
+              1. Foto Profil Resmi KTA
+            </h4>
+
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+              
+              {/* Photo Preview with Interactive Upload Overlay */}
+              <div 
+                className="relative group cursor-pointer shrink-0"
+                onClick={() => fileInputRef.current?.click()}
+                title="Klik untuk ganti foto profil"
+              >
+                <img
+                  src={formData.photoUrl || SAMPLE_AVATARS[0]}
+                  alt="Foto Profil"
+                  className="w-24 h-28 sm:w-28 sm:h-32 rounded-2xl object-cover border-4 border-white shadow-lg bg-slate-200 group-hover:opacity-90 transition-all"
+                  onError={(e) => {
+                    e.target.src = SAMPLE_AVATARS[0];
+                  }}
+                />
+                <div className="absolute inset-0 bg-slate-950/60 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <UploadCloud className="w-6 h-6 mb-1 text-rose-400" />
+                  <span className="text-[10px] font-bold">Ganti Foto</span>
+                </div>
+                <div className="absolute -bottom-2 -right-2 p-1.5 rounded-full bg-rose-600 text-white shadow-md border-2 border-white">
+                  <Camera className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Upload Action Buttons & URL Input */}
+              <div className="flex-1 space-y-3 w-full">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Pilih File Foto dari Perangkat (Galeri / Kamera)
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition-all active:scale-95"
+                    >
+                      <UploadCloud className="w-4 h-4" />
+                      <span>Upload Foto Baru</span>
+                    </button>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      JPG, PNG, atau WebP (Otomatis Dioptimasi)
+                    </span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* Optional URL Input */}
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    Atau gunakan Link / URL Foto Web:
+                  </label>
+                  <input
+                    type="url"
+                    name="photoUrl"
+                    value={formData.photoUrl}
+                    onChange={handleChange}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-800 text-xs font-mono"
+                  />
+                </div>
+
+                {/* Preset Avatars */}
+                <div>
+                  <span className="text-[11px] text-slate-500 block mb-1 font-medium">
+                    Atau pilih avatar cepat:
+                  </span>
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                    {SAMPLE_AVATARS.map((url, idx) => (
+                      <img
+                        key={idx}
+                        src={url}
+                        alt={`Avatar ${idx}`}
+                        onClick={() => setFormData(p => ({ ...p, photoUrl: url }))}
+                        className={`w-9 h-9 rounded-xl object-cover cursor-pointer border-2 transition-all shrink-0 ${
+                          formData.photoUrl === url ? 'border-rose-600 scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Section 2: Data Identitas Pokok */}
           <div>
             <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5 pb-2 border-b border-slate-100">
               <Shield className="w-4 h-4 text-rose-600" />
-              1. Identitas Anggota & Jabatan
+              2. Identitas Anggota & Jabatan
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -244,11 +392,11 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
             </div>
           </div>
 
-          {/* Section 2: Legalitas & Dewan Pers */}
+          {/* Section 3: Legalitas & Dewan Pers */}
           <div>
             <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5 pb-2 border-b border-slate-100">
               <Award className="w-4 h-4 text-amber-600" />
-              2. Kompetensi & Masa Berlaku KTA
+              3. Kompetensi & Masa Berlaku KTA
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -293,57 +441,6 @@ export default function StaffFormModal({ isOpen, onClose, onSave, initialData })
                   onChange={handleChange}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-slate-800"
                 />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Foto Profil & Avatar */}
-          <div>
-            <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider mb-3 flex items-center gap-1.5 pb-2 border-b border-slate-100">
-              <ImageIcon className="w-4 h-4 text-sky-600" />
-              3. Foto Resmi KTA
-            </h4>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <img
-                  src={formData.photoUrl}
-                  alt="Preview"
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-rose-600 shadow-md shrink-0"
-                />
-                <div className="flex-1">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    URL Foto / Pas Foto
-                  </label>
-                  <input
-                    type="url"
-                    name="photoUrl"
-                    value={formData.photoUrl}
-                    onChange={handleChange}
-                    placeholder="https://..."
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Sample Presets */}
-              <div>
-                <span className="text-[11px] text-slate-500 block mb-1.5 font-medium">
-                  Atau pilih avatar default:
-                </span>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                  {SAMPLE_AVATARS.map((url, idx) => (
-                    <img
-                      key={idx}
-                      src={url}
-                      alt={`Avatar ${idx}`}
-                      onClick={() => setFormData(p => ({ ...p, photoUrl: url }))}
-                      className={`w-10 h-10 rounded-xl object-cover cursor-pointer border-2 transition-all ${
-                        formData.photoUrl === url ? 'border-rose-600 scale-110 shadow-md' : 'border-transparent opacity-70 hover:opacity-100'
-                      }`}
-                    />
-                  ))}
-                </div>
               </div>
             </div>
           </div>
