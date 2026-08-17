@@ -7,7 +7,7 @@ import {
   MapPin, 
   Award, 
   Calendar, 
-  Building, 
+  Building2, 
   PhoneCall, 
   Search,
   ExternalLink
