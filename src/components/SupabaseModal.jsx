@@ -11,7 +11,9 @@ import {
   ExternalLink, 
   ShieldCheck, 
   Trash2,
-  Server
+  Server,
+  HelpCircle,
+  Play
 } from 'lucide-react';
 import { 
   getSupabaseConfig, 
@@ -21,7 +23,9 @@ import {
   syncAllStaffToSupabase 
 } from '../utils/supabaseClient';
 
-const SQL_SCHEMA_TEXT = `-- 1. Buat Tabel staff_jarrakpos
+const SQL_SCHEMA_TEXT = `-- ==============================================================================
+-- 1. BUAT TABEL staff_jarrakpos
+-- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.staff_jarrakpos (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -47,14 +51,48 @@ CREATE TABLE IF NOT EXISTS public.staff_jarrakpos (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 2. Aktifkan Row Level Security (RLS)
+-- ==============================================================================
+-- 2. AKTIFKAN ROW LEVEL SECURITY (RLS) & HAPUS POLICY LAMA JIKA ADA
+-- ==============================================================================
 ALTER TABLE public.staff_jarrakpos ENABLE ROW LEVEL SECURITY;
 
--- 3. Buat Kebijakan Akses (Public Read & Write)
-CREATE POLICY "Allow public read access" ON public.staff_jarrakpos FOR SELECT USING (true);
-CREATE POLICY "Allow anon insert" ON public.staff_jarrakpos FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow anon update" ON public.staff_jarrakpos FOR UPDATE USING (true) WITH CHECK (true);
-CREATE POLICY "Allow anon delete" ON public.staff_jarrakpos FOR DELETE USING (true);`;
+DROP POLICY IF EXISTS "Allow public read access" ON public.staff_jarrakpos;
+DROP POLICY IF EXISTS "Allow anon insert" ON public.staff_jarrakpos;
+DROP POLICY IF EXISTS "Allow anon update" ON public.staff_jarrakpos;
+DROP POLICY IF EXISTS "Allow anon delete" ON public.staff_jarrakpos;
+
+-- ==============================================================================
+-- 3. BUAT POLICY AKSES LENGKAP (BACA & TULIS)
+-- ==============================================================================
+CREATE POLICY "Allow public read access" 
+ON public.staff_jarrakpos 
+FOR SELECT 
+TO public 
+USING (true);
+
+CREATE POLICY "Allow anon insert" 
+ON public.staff_jarrakpos 
+FOR INSERT 
+TO public 
+WITH CHECK (true);
+
+CREATE POLICY "Allow anon update" 
+ON public.staff_jarrakpos 
+FOR UPDATE 
+TO public 
+USING (true) 
+WITH CHECK (true);
+
+CREATE POLICY "Allow anon delete" 
+ON public.staff_jarrakpos 
+FOR DELETE 
+TO public 
+USING (true);
+
+-- ==============================================================================
+-- 4. REFRESH SCHEMA CACHE SUPABASE POSTGREST
+-- ==============================================================================
+NOTIFY pgrst, 'reload schema';`;
 
 export default function SupabaseModal({ 
   isOpen, 
@@ -115,7 +153,18 @@ export default function SupabaseModal({
       onClose();
     } catch (err) {
       setIsSyncing(false);
-      alert('Gagal menyinkronkan data: ' + err.message + '\n\nPastikan Anda sudah menjalankan SQL Skema di Supabase Dashboard!');
+      if (err.message && err.message.includes('staff_jarrakpos')) {
+        alert(
+          '⚠️ Tabel public.staff_jarrakpos BELUM DIBUAT di Supabase!\n\n' +
+          'Solusi (Hanya 1 Menit):\n' +
+          '1. Salin tombol "Salin SQL Skema" di bawah.\n' +
+          '2. Buka Supabase Dashboard > Menu SQL Editor.\n' +
+          '3. Tempel kodenya dan klik tombol hijau "RUN".\n' +
+          '4. Setelah itu, klik lagi tombol "Simpan & Unggah" ini.'
+        );
+      } else {
+        alert('Gagal menyinkronkan data: ' + err.message);
+      }
     }
   };
 
@@ -166,11 +215,46 @@ export default function SupabaseModal({
         {/* Modal Body */}
         <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-xs sm:text-sm">
           
-          {/* Step 1: Input Credentials */}
-          <div className="space-y-4">
-            <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5 pb-2 border-b border-slate-100">
-              <Server className="w-4 h-4 text-emerald-600" />
-              1. Kredensial Proyek Supabase
+          {/* Important Notice */}
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
+            <HelpCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="block font-bold">Wajib Menjalankan SQL Editor di Supabase Dahulu:</strong>
+              Supabase memerlukan pembuatan tabel <code className="bg-amber-100 px-1.5 py-0.5 rounded text-amber-950 font-bold font-mono">public.staff_jarrakpos</code>. Salin kode SQL pada <strong>Langkah 1</strong> di bawah dan jalankan di Supabase Dashboard Anda.
+            </div>
+          </div>
+
+          {/* Step 1: SQL Schema Setup */}
+          <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <Play className="w-4 h-4 text-emerald-600" />
+                Langkah 1: Salin & Jalankan Skrip SQL di Supabase
+              </h4>
+              <button
+                type="button"
+                onClick={handleCopySql}
+                className="flex items-center gap-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-xl shadow-sm transition-all active:scale-95"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? 'Tersalin ke Clipboard!' : 'Salin Skrip SQL'}</span>
+              </button>
+            </div>
+
+            <div className="bg-slate-900 text-slate-200 p-3.5 rounded-2xl font-mono text-[11px] max-h-40 overflow-y-auto border border-slate-800">
+              <pre>{SQL_SCHEMA_TEXT}</pre>
+            </div>
+            
+            <p className="text-[11px] text-slate-600 leading-relaxed">
+              📍 <strong>Cara Menjalankan:</strong> Buka <strong>Supabase Dashboard &gt; SQL Editor &gt; New Query</strong>, tempel skrip di atas, lalu klik <strong>RUN</strong>.
+            </p>
+          </div>
+
+          {/* Step 2: Input Credentials */}
+          <div className="space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800 flex items-center gap-1.5 pb-2 border-b border-slate-200">
+              <Server className="w-4 h-4 text-sky-600" />
+              Langkah 2: Masukkan Kredensial Supabase
             </h4>
 
             <div>
@@ -182,7 +266,7 @@ export default function SupabaseModal({
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://xyzcompany.supabase.co"
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
               />
             </div>
 
@@ -195,7 +279,7 @@ export default function SupabaseModal({
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
+                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono"
               />
             </div>
 
@@ -246,44 +330,18 @@ export default function SupabaseModal({
             )}
           </div>
 
-          {/* Step 2: SQL Schema Setup */}
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <Database className="w-4 h-4 text-blue-600" />
-                2. Buat Tabel di SQL Editor Supabase
-              </h4>
-              <button
-                type="button"
-                onClick={handleCopySql}
-                className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg transition-all"
-              >
-                {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                <span>{copied ? 'Tersalin!' : 'Salin SQL Skema'}</span>
-              </button>
-            </div>
-
-            <div className="bg-slate-900 text-slate-200 p-3.5 rounded-2xl font-mono text-[11px] max-h-40 overflow-y-auto border border-slate-800">
-              <pre>{SQL_SCHEMA_TEXT}</pre>
-            </div>
-            
-            <p className="text-[11px] text-slate-500">
-              💡 Buka <strong>Supabase Dashboard &gt; SQL Editor</strong>, tempel skrip di atas, lalu klik <strong>Run</strong>.
-            </p>
-          </div>
-
           {/* Step 3: 1-Click Upload / Sync */}
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
             <div className="flex items-center justify-between">
               <div className="font-bold text-xs text-emerald-950">
-                3. Sinkronkan Data Redaksi ke Cloud
+                Langkah 3: Sinkronkan Data Redaksi ke Cloud
               </div>
               <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
                 {staffList.length} Personil Siap Upload
               </span>
             </div>
             <p className="text-[11px] text-emerald-800 leading-relaxed">
-              Otomatis unggah seluruh {staffList.length} jajaran Dewan Redaksi Jarrakpos yang ada saat ini ke database Supabase Anda.
+              Klik tombol di bawah untuk otomatis mengunggah seluruh {staffList.length} anggota Dewan Redaksi Jarrakpos ke database Supabase Anda.
             </p>
             <button
               type="button"
