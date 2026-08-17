@@ -2,15 +2,28 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="refresh" content="0; url=./" />
-    <title>JARRAKPOS.COM - Redirection</title>
+    <title>JARRAKPOS.COM - Redirecting...</title>
     <script>
-      // Single Page App redirect for GitHub Pages
-      sessionStorage.redirect = location.href;
-      window.location.replace('./');
+      // Single Page Application SPA Redirect for GitHub Pages
+      (function() {
+        var path = window.location.pathname;
+        var search = window.location.search;
+        var hash = window.location.hash;
+        
+        // Save the intended route path into sessionStorage
+        sessionStorage.setItem('SPA_REDIRECT_URL', path + search + hash);
+        
+        // Redirect to repository base
+        var repoBase = '/datajp/';
+        if (path.indexOf(repoBase) === 0) {
+          window.location.replace(repoBase);
+        } else {
+          window.location.replace('/');
+        }
+      })();
     </script>
   </head>
-  <body>
-    <p>Mengalihkan ke halaman utama Jarrakpos...</p>
+  <body style="font-family: sans-serif; text-align: center; padding: 40px; background: #020617; color: white;">
+    <p>Mengalihkan ke halaman portal Jarrakpos...</p>
   </body>
 </html>
