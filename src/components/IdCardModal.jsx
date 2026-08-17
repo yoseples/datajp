@@ -13,7 +13,8 @@ import {
   Phone,
   Globe,
   Lock,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
@@ -22,10 +23,11 @@ export default function IdCardModal({
   isOpen, 
   onClose, 
   onVerify,
-  canDownload = true // Only Admin & Developer can download/print
+  canDownload = true
 }) {
   const [qrUrl, setQrUrl] = useState('');
   const [activeSide, setActiveSide] = useState('front'); // 'front' | 'back'
+  const [isExporting, setIsExporting] = useState(false);
   const cardFrontRef = useRef(null);
   const cardBackRef = useRef(null);
 
@@ -34,7 +36,7 @@ export default function IdCardModal({
       const verifyData = `https://jarrakpos.com/verifikasi-pers?id=${encodeURIComponent(staff.id)}&nip=${encodeURIComponent(staff.nip || '')}&name=${encodeURIComponent(staff.name)}`;
       
       QRCode.toDataURL(verifyData, {
-        width: 300,
+        width: 400,
         margin: 1,
         color: {
           dark: '#0f172a',
@@ -56,6 +58,7 @@ export default function IdCardModal({
     window.print();
   };
 
+  // High-Resolution 1:1 Pixel-Perfect Export
   const handleDownload = async (side) => {
     if (!canDownload) {
       alert('Fitur Unduh Berkas KTA hanya dapat diakses oleh Admin dan Developer!');
@@ -65,25 +68,56 @@ export default function IdCardModal({
     const targetRef = side === 'front' ? cardFrontRef.current : cardBackRef.current;
     if (!targetRef) return;
 
+    setIsExporting(true);
+
     try {
+      // Temporarily ensure card is fully opaque and styled without transforms
+      const originalStyle = targetRef.style.cssText;
+      
+      // Render canvas with html2canvas at scale 3 for crisp 300 DPI print quality
       const canvas = await html2canvas(targetRef, {
         scale: 3,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 15000,
+        onclone: (clonedDoc) => {
+          const clonedCard = side === 'front' 
+            ? clonedDoc.getElementById('id-card-front-export') 
+            : clonedDoc.getElementById('id-card-back-export');
+          
+          if (clonedCard) {
+            clonedCard.style.display = 'flex';
+            clonedCard.style.opacity = '1';
+            clonedCard.style.transform = 'none';
+            clonedCard.style.boxShadow = 'none';
+            clonedCard.style.borderRadius = '24px';
+          }
+        }
       });
+
+      const cleanName = staff.name.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `KTA_JARRAKPOS_${cleanName}_${side.toUpperCase()}.png`;
+      
       const link = document.createElement('a');
-      link.download = `KTA_JARRAKPOS_${staff.name.replace(/[^a-zA-Z0-9]/g, '_')}_${side.toUpperCase()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (err) {
-      alert('Gagal mengunduh kartu: ' + err.message);
+      console.error('Export Error:', err);
+      alert('Gagal mengekspor kartu: ' + err.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
   return (
     <div 
       className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 select-none"
-      onContextMenu={(e) => e.preventDefault()} // Disable Right Click on ID Card Modal
+      onContextMenu={(e) => e.preventDefault()}
     >
       <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
@@ -145,12 +179,23 @@ export default function IdCardModal({
             {canDownload ? (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleDownload(activeSide)}
-                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 transition-all"
+                  onClick={() => handleDownload('front')}
+                  disabled={isExporting}
+                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 transition-all active:scale-95 disabled:opacity-50"
                 >
-                  <Download className="w-3.5 h-3.5 text-emerald-400" />
-                  Unduh PNG
+                  {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" /> : <Download className="w-3.5 h-3.5 text-emerald-400" />}
+                  Unduh Sisi Depan
                 </button>
+
+                <button
+                  onClick={() => handleDownload('back')}
+                  disabled={isExporting}
+                  className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" /> : <Download className="w-3.5 h-3.5 text-emerald-400" />}
+                  Unduh Sisi Belakang
+                </button>
+
                 <button
                   onClick={handlePrint}
                   className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95"
@@ -167,67 +212,92 @@ export default function IdCardModal({
             )}
           </div>
 
-          {/* ID Card Display Area (Protected with no-context-menu) */}
+          {/* ID Card Display Area */}
           <div 
             id="printable-id-card" 
             className="flex flex-wrap justify-center items-center gap-8 py-4 select-none"
             onContextMenu={(e) => e.preventDefault()}
           >
             
-            {/* FRONT CARD */}
+            {/* FRONT CARD (Ultra Crisp Layout) */}
             <div 
               ref={cardFrontRef}
-              className={`w-[320px] h-[510px] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col justify-between select-none text-slate-900 ${
+              id="id-card-front-export"
+              className={`w-[330px] h-[525px] rounded-[24px] overflow-hidden shadow-2xl relative flex flex-col justify-between select-none text-slate-900 ${
                 activeSide === 'front' ? 'ring-4 ring-rose-500/50 block' : 'hidden sm:flex opacity-60 hover:opacity-100 cursor-pointer'
               }`}
               onClick={() => setActiveSide('front')}
               style={{
-                background: 'linear-gradient(180deg, #0a0f1d 0%, #1e1b4b 28%, #ffffff 28.1%, #f8fafc 100%)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                background: '#ffffff',
+                boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.45)',
+                border: '1px solid #e2e8f0'
               }}
             >
-              {/* Card Top Header */}
-              <div className="p-4 pt-4 text-center text-white relative">
+              {/* Card Top Header Banner */}
+              <div 
+                className="p-4 pt-3.5 text-center text-white relative"
+                style={{
+                  background: 'linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #881337 100%)'
+                }}
+              >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-white p-0.5 shadow-md flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-md flex items-center justify-center shrink-0">
                       <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain pointer-events-none" />
                     </div>
-                    <div className="text-left leading-none">
+                    <div className="text-left leading-tight">
                       <span className="font-black text-sm tracking-tight text-white block">
-                        JARRAK<span className="text-rose-400">POS.COM</span>
+                        JARRAK<span style={{ color: '#f43f5e' }}>POS.COM</span>
                       </span>
-                      <span className="text-[7.5px] font-bold text-slate-300 tracking-wider uppercase">
+                      <span className="text-[7.5px] font-bold text-slate-300 tracking-wider uppercase block">
                         BERSAMA MEMBANGUN BANGSA
                       </span>
                     </div>
                   </div>
 
-                  <div className="px-2 py-0.5 rounded-full bg-rose-600/90 text-[9px] font-bold uppercase tracking-widest text-white border border-rose-400/40">
+                  <div 
+                    className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest text-white"
+                    style={{ background: '#e11d48', border: '1px solid rgba(255,255,255,0.4)' }}
+                  >
                     PERS
                   </div>
                 </div>
 
-                <div className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-1.5 border-t border-slate-700/60 pt-1">
+                <div 
+                  className="text-[9px] font-bold uppercase tracking-widest text-slate-200 mt-1.5 pt-1"
+                  style={{ borderTop: '1px solid rgba(255, 255, 255, 0.2)' }}
+                >
                   KARTU PERS / MEDIA RESMI
                 </div>
               </div>
 
               {/* Photo & Badge Section */}
-              <div className="px-6 flex flex-col items-center mt-2 flex-1">
+              <div className="px-5 flex flex-col items-center mt-2 flex-1 justify-center">
                 
                 {/* Photo with Frame */}
                 <div className="relative">
                   <img
                     src={staff.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80'}
                     alt={staff.name}
-                    className="w-28 h-32 rounded-2xl object-cover border-4 border-white shadow-xl bg-slate-200 pointer-events-none"
+                    className="w-28 h-32 rounded-2xl object-cover shadow-xl pointer-events-none"
+                    style={{
+                      border: '4px solid #ffffff',
+                      boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+                      backgroundColor: '#f1f5f9'
+                    }}
                     crossOrigin="anonymous"
                     onError={(e) => {
                       e.target.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300&auto=format&fit=crop&q=80';
                     }}
                   />
-                  <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 bg-slate-900 text-rose-400 font-mono text-[9px] font-bold px-2.5 py-0.5 rounded-full border border-slate-700 shadow-md whitespace-nowrap">
+                  <div 
+                    className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 font-mono text-[9px] font-bold px-2.5 py-0.5 rounded-full shadow-md whitespace-nowrap"
+                    style={{
+                      background: '#0f172a',
+                      color: '#fb7185',
+                      border: '1px solid #334155'
+                    }}
+                  >
                     {staff.nip || staff.id}
                   </div>
                 </div>
@@ -237,19 +307,32 @@ export default function IdCardModal({
                   <h3 className="font-extrabold text-base text-slate-900 leading-tight">
                     {staff.name}
                   </h3>
-                  <div className="inline-block mt-1 px-3 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs">
+                  <div 
+                    className="inline-block mt-1 px-3 py-0.5 rounded-full font-bold text-xs"
+                    style={{
+                      background: '#fff1f2',
+                      border: '1px solid #fecdd3',
+                      color: '#be123c'
+                    }}
+                  >
                     {staff.role}
                   </div>
-                  <p className="text-[11px] font-semibold text-slate-500 mt-1">
+                  <p className="text-[11px] font-semibold text-slate-600 mt-1">
                     {staff.bureau}
                   </p>
                 </div>
 
                 {/* UKW Dewan Pers & Validity Badge */}
-                <div className="w-full bg-slate-100/90 rounded-xl p-2.5 mt-3 border border-slate-200/80 text-[10px] space-y-1">
+                <div 
+                  className="w-full rounded-xl p-2 mt-2.5 text-[10px] space-y-0.5"
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 font-medium">Status UKW:</span>
-                    <span className="font-bold text-amber-800">{staff.ukwLevel || 'Belum UKW'}</span>
+                    <span className="font-bold text-amber-900">{staff.ukwLevel || 'Belum UKW'}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500 font-medium">Berlaku Hingga:</span>
@@ -260,13 +343,20 @@ export default function IdCardModal({
               </div>
 
               {/* Card Footer with QR & Barcode */}
-              <div className="bg-slate-900 text-white p-3 px-4 flex items-center justify-between rounded-b-3xl border-t border-slate-800">
+              <div 
+                className="text-white p-3 px-4 flex items-center justify-between rounded-b-[24px]"
+                style={{
+                  background: '#0f172a',
+                  borderTop: '1px solid #1e293b'
+                }}
+              >
                 <div className="flex items-center gap-2">
                   {qrUrl && (
                     <img 
                       src={qrUrl} 
                       alt="QR Verification" 
-                      className="w-12 h-12 rounded-lg bg-white p-0.5 shadow-sm pointer-events-none"
+                      className="w-12 h-12 rounded-lg p-0.5 pointer-events-none"
+                      style={{ background: '#ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
                     />
                   )}
                   <div className="text-left">
@@ -274,7 +364,7 @@ export default function IdCardModal({
                       Scan Verifikasi
                     </span>
                     <span className="text-[9px] font-mono text-emerald-400 font-bold flex items-center gap-0.5">
-                      <CheckCircle2 className="w-2.5 h-2.5" />
+                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
                       RESMI AKTIF
                     </span>
                   </div>
@@ -287,27 +377,34 @@ export default function IdCardModal({
               </div>
             </div>
 
-            {/* BACK CARD */}
+            {/* BACK CARD (Ultra Crisp Layout) */}
             <div 
               ref={cardBackRef}
-              className={`w-[320px] h-[510px] rounded-3xl overflow-hidden shadow-2xl relative flex flex-col justify-between select-none text-slate-900 ${
+              id="id-card-back-export"
+              className={`w-[330px] h-[525px] rounded-[24px] overflow-hidden shadow-2xl relative flex flex-col justify-between select-none text-slate-900 ${
                 activeSide === 'back' ? 'ring-4 ring-rose-500/50 block' : 'hidden sm:flex opacity-60 hover:opacity-100 cursor-pointer'
               }`}
               onClick={() => setActiveSide('back')}
               style={{
-                background: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                background: '#ffffff',
+                boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.45)',
+                border: '1px solid #e2e8f0'
               }}
             >
               {/* Back Header */}
-              <div className="bg-slate-900 text-white p-4 pt-4 text-center">
+              <div 
+                className="text-white p-4 pt-3.5 text-center"
+                style={{
+                  background: 'linear-gradient(135deg, #090d16 0%, #1e1b4b 100%)'
+                }}
+              >
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <div className="w-6 h-6 rounded-lg bg-white p-0.5 flex items-center justify-center">
                     <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain pointer-events-none" />
                   </div>
                   <span className="text-xs font-bold tracking-wider text-rose-400 uppercase">JARRAKPOS.COM</span>
                 </div>
-                <h4 className="font-extrabold text-[11px] tracking-wider text-white uppercase">
+                <h4 className="font-extrabold text-[10px] tracking-wider text-white uppercase">
                   KETENTUAN KARTU PERS RESMI
                 </h4>
                 <p className="text-[8px] text-slate-300 font-medium">
@@ -316,14 +413,14 @@ export default function IdCardModal({
               </div>
 
               {/* Legal Points */}
-              <div className="p-4 text-[10px] text-slate-700 space-y-2.5 leading-relaxed flex-1">
+              <div className="p-4 text-[9.5px] text-slate-700 space-y-2 leading-relaxed flex-1">
                 <div className="flex items-start gap-1.5">
                   <span className="font-bold text-rose-600">1.</span>
-                  <span>Pemegang kartu ini adalah <strong>Wartawan/Anggota Resmi Jarrakpos.com</strong> yang dilindungi oleh UU Pers No. 40 Tahun 1999 dalam menjalankan tugas jurnalistik.</span>
+                  <span>Pemegang kartu ini adalah <strong>Wartawan/Anggota Resmi Jarrakpos.com</strong> yang dilindungi oleh UU Pers No. 40 Tahun 1999.</span>
                 </div>
                 <div className="flex items-start gap-1.5">
                   <span className="font-bold text-rose-600">2.</span>
-                  <span>Wajib menjunjung tinggi <strong>Kode Etik Jurnalistik (KEJ)</strong> dan asas praduga tak bersalah dalam setiap peliputan.</span>
+                  <span>Wajib menjunjung tinggi <strong>Kode Etik Jurnalistik (KEJ)</strong> dan asas praduga tak bersalah.</span>
                 </div>
                 <div className="flex items-start gap-1.5">
                   <span className="font-bold text-rose-600">3.</span>
@@ -331,11 +428,17 @@ export default function IdCardModal({
                 </div>
                 <div className="flex items-start gap-1.5">
                   <span className="font-bold text-rose-600">4.</span>
-                  <span>Kartu ini tidak berlaku apabila masa berlaku habis atau anggota telah diberhentikan oleh Dewan Redaksi.</span>
+                  <span>Kartu ini tidak berlaku apabila masa berlaku habis atau anggota diberhentikan oleh Dewan Redaksi.</span>
                 </div>
 
                 {/* Company Legal Notice */}
-                <div className="mt-3 p-2 rounded-xl bg-slate-100 border border-slate-200 text-[9px] text-slate-600">
+                <div 
+                  className="mt-2 p-2 rounded-xl text-[8.5px] text-slate-600"
+                  style={{
+                    background: '#f1f5f9',
+                    border: '1px solid #e2e8f0'
+                  }}
+                >
                   <div className="font-bold text-slate-800">Diterbitkan Oleh:</div>
                   <div>PT JARRAK POS MEDIA NUSANTARA</div>
                   <div>SK Kemenkumham: AHU-0012389.AH.01.01</div>
@@ -344,12 +447,21 @@ export default function IdCardModal({
               </div>
 
               {/* Back Footer with Digital Signature Stamp */}
-              <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between text-left">
+              <div 
+                className="p-3.5 px-4 flex items-center justify-between text-left rounded-b-[24px]"
+                style={{
+                  background: '#f8fafc',
+                  borderTop: '1px solid #e2e8f0'
+                }}
+              >
                 <div>
                   <span className="text-[9px] font-bold text-slate-800 block">Denpasar, Bali</span>
                   <span className="text-[8px] text-slate-500 block">Pemimpin Redaksi / P.J.</span>
-                  <div className="my-1">
-                    <span className="font-serif italic text-rose-800 font-extrabold text-xs block -rotate-3">
+                  <div className="my-0.5">
+                    <span 
+                      className="font-serif italic font-extrabold text-xs block -rotate-3"
+                      style={{ color: '#9f1239' }}
+                    >
                       [Jarrakpos Signature]
                     </span>
                   </div>
@@ -359,7 +471,14 @@ export default function IdCardModal({
                 </div>
 
                 {/* Official Stamp */}
-                <div className="w-16 h-16 rounded-full border-2 border-rose-600/80 flex flex-col items-center justify-center text-[7px] font-extrabold text-rose-700 uppercase tracking-tighter p-1 text-center -rotate-12 bg-rose-50/50 pointer-events-none">
+                <div 
+                  className="w-16 h-16 rounded-full flex flex-col items-center justify-center text-[7px] font-extrabold uppercase tracking-tighter p-1 text-center -rotate-12 pointer-events-none"
+                  style={{
+                    border: '2px solid rgba(225, 29, 72, 0.85)',
+                    color: '#be123c',
+                    background: '#fff1f2'
+                  }}
+                >
                   <span>PT JARRAK POS</span>
                   <span className="text-slate-900 font-black">REDAKSI</span>
                   <span>BALI - INDONESIA</span>
