@@ -15,7 +15,8 @@ import {
   FileCheck,
   Heart,
   Camera,
-  UploadCloud
+  UploadCloud,
+  Sparkles
 } from 'lucide-react';
 
 export default function StaffDetailModal({ 
