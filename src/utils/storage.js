@@ -1,6 +1,6 @@
 import { INITIAL_STAFF } from '../data/initialData';
 
-const STORAGE_KEY = 'JARRAKPOS_STAFF_DATABASE_V1';
+const STORAGE_KEY = 'JARRAKPOS_STAFF_DATABASE_V2_OFFICIAL';
 
 export const getStoredStaff = () => {
   try {
@@ -9,7 +9,8 @@ export const getStoredStaff = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_STAFF));
       return INITIAL_STAFF;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_STAFF;
   } catch (err) {
     console.error('Error reading localStorage:', err);
     return INITIAL_STAFF;

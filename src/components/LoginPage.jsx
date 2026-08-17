@@ -16,28 +16,28 @@ import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
 const PRESET_ACCOUNTS = [
   {
-    role: 'Pimpinan Redaksi / Admin Master',
-    email: 'admin@jarrakpos.com',
-    pass: 'admin123',
-    name: 'I Putu Agus Sastrawan, S.I.Kom.',
-    badge: 'Super Admin Redaksi',
+    role: 'Dewan Redaksi',
+    email: 'dewan.redaksi@jarrakpos.com',
+    pass: 'jarrak123',
+    name: 'I Gede Putu Sudiarta, S.H.',
+    badge: 'Dewan Redaksi Utama',
+    color: 'border-amber-500 bg-amber-50/70 text-amber-900'
+  },
+  {
+    role: 'Pemimpin Redaksi / Penanggung Jawab',
+    email: 'pemred@jarrakpos.com',
+    pass: 'pemred123',
+    name: 'Nasir / John K. Nahadin',
+    badge: 'Pemimpin Redaksi',
     color: 'border-rose-500 bg-rose-50/70 text-rose-900'
   },
   {
-    role: 'Redaktur Pelaksana (Managing Editor)',
+    role: 'Redaktur Pelaksana',
     email: 'redpel@jarrakpos.com',
     pass: 'redpel123',
-    name: 'Ni Kadek Ayu Wulandari, S.S.',
-    badge: 'Editor In Chief',
+    name: 'I Wayan Adnyana',
+    badge: 'Redaktur Pelaksana',
     color: 'border-blue-500 bg-blue-50/70 text-blue-900'
-  },
-  {
-    role: 'Jurnalis / Wartawan Lapangan',
-    email: 'wartawan@jarrakpos.com',
-    pass: 'wartawan123',
-    name: 'Rizky Pratama Wicaksono',
-    badge: 'Reporter IKN & Kaltim',
-    color: 'border-emerald-500 bg-emerald-50/70 text-emerald-900'
   }
 ];
 
@@ -79,7 +79,7 @@ export default function LoginPage({ onLoginSuccess }) {
         setErrorMsg('Email atau kata sandi tidak valid. Gunakan akun demo di bawah.');
         setIsLoading(false);
       }
-    }, 600);
+    }, 500);
   };
 
   const handleQuickLogin = (preset) => {
@@ -149,7 +149,7 @@ export default function LoginPage({ onLoginSuccess }) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@jarrakpos.com"
+                  placeholder="dewan.redaksi@jarrakpos.com"
                   required
                   className="w-full bg-slate-950/80 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all"
                 />
@@ -219,7 +219,7 @@ export default function LoginPage({ onLoginSuccess }) {
           <div className="mt-6 pt-5 border-t border-slate-800" id="demo">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2.5 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Pilih Akun Demo Cepat (1 Klik):
+              Pilih Akun Demo Dewan Redaksi (1 Klik):
             </span>
 
             <div className="space-y-2">
@@ -232,7 +232,7 @@ export default function LoginPage({ onLoginSuccess }) {
                 >
                   <div className="min-w-0 pr-2">
                     <div className="font-bold text-xs text-white group-hover:text-rose-400 transition-colors truncate">
-                      {acc.role}
+                      {acc.role} - {acc.name}
                     </div>
                     <div className="text-[10px] text-slate-400 font-mono truncate">
                       {acc.email} (pass: {acc.pass})
