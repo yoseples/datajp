@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { 
   getStoredStaff, 
@@ -83,6 +83,39 @@ export default function App() {
     setToastMessage({ text: msg, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
+
+  // Close all modals & return cleanly to home
+  const returnToHome = useCallback(() => {
+    setIsFormModalOpen(false);
+    setIsDetailModalOpen(false);
+    setIsIdCardModalOpen(false);
+    setIsVerifyModalOpen(false);
+    setIsSupabaseModalOpen(false);
+    setSelectedStaffForDetail(null);
+    setSelectedStaffForIdCard(null);
+    setSelectedStaffForVerify(null);
+    setEditingStaff(null);
+  }, []);
+
+  // Helper to open modal with browser history state
+  const openModalWithHistory = (setter, staff = null, targetStaffSetter = null, modalName = 'modal') => {
+    if (targetStaffSetter && staff) {
+      targetStaffSetter(staff);
+    }
+    setter(true);
+    window.history.pushState({ modal: modalName }, '');
+  };
+
+  // Listen to Browser Back Button (popstate event) -> Return to Home
+  useEffect(() => {
+    const handlePopState = (e) => {
+      // When back is pressed on browser or smartphone, close all active modals and return to home
+      returnToHome();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [returnToHome]);
 
   // Check current user role
   const isDeveloper = currentUser?.role === SYSTEM_ROLES.DEVELOPER;
@@ -169,6 +202,7 @@ export default function App() {
     if (confirm('Apakah Anda ingin keluar dari sistem Bank Data Jarrakpos?')) {
       setCurrentUser(null);
       localStorage.removeItem(USER_STORAGE_KEY);
+      returnToHome();
       showToast('Anda telah keluar dari sistem.', 'info');
     }
   };
@@ -176,23 +210,10 @@ export default function App() {
   // Filter logic for Admin & Developer
   const filteredStaff = useMemo(() => {
     return staffList.filter((staff) => {
-      // Division filter
-      if (selectedDivision !== 'Semua Divisi' && staff.division !== selectedDivision) {
-        return false;
-      }
-      // Bureau filter
-      if (selectedBureau !== 'Semua Biro' && staff.bureau !== selectedBureau) {
-        return false;
-      }
-      // UKW filter
-      if (selectedUkw !== 'Semua UKW' && staff.ukwLevel !== selectedUkw) {
-        return false;
-      }
-      // Status filter
-      if (selectedStatus !== 'Semua Status' && staff.status !== selectedStatus) {
-        return false;
-      }
-      // Search query
+      if (selectedDivision !== 'Semua Divisi' && staff.division !== selectedDivision) return false;
+      if (selectedBureau !== 'Semua Biro' && staff.bureau !== selectedBureau) return false;
+      if (selectedUkw !== 'Semua UKW' && staff.ukwLevel !== selectedUkw) return false;
+      if (selectedStatus !== 'Semua Status' && staff.status !== selectedStatus) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchName = staff.name?.toLowerCase().includes(q);
@@ -200,9 +221,7 @@ export default function App() {
         const matchNip = staff.nip?.toLowerCase().includes(q);
         const matchBureau = staff.bureau?.toLowerCase().includes(q);
         const matchUkw = staff.ukwNumber?.toLowerCase().includes(q);
-        if (!matchName && !matchRole && !matchNip && !matchBureau && !matchUkw) {
-          return false;
-        }
+        if (!matchName && !matchRole && !matchNip && !matchBureau && !matchUkw) return false;
       }
       return true;
     });
@@ -290,27 +309,28 @@ export default function App() {
 
   const handleOpenAddModal = () => {
     setEditingStaff(null);
-    setIsFormModalOpen(true);
+    openModalWithHistory(setIsFormModalOpen, null, null, 'add-staff');
   };
 
   const handleOpenEditModal = (staff) => {
     setEditingStaff(staff);
-    setIsFormModalOpen(true);
+    openModalWithHistory(setIsFormModalOpen, staff, setEditingStaff, 'edit-staff');
   };
 
   const handleOpenDetailModal = (staff) => {
-    setSelectedStaffForDetail(staff);
-    setIsDetailModalOpen(true);
+    openModalWithHistory(setIsDetailModalOpen, staff, setSelectedStaffForDetail, 'staff-detail');
   };
 
   const handleOpenIdCardModal = (staff) => {
-    setSelectedStaffForIdCard(staff);
-    setIsIdCardModalOpen(true);
+    openModalWithHistory(setIsIdCardModalOpen, staff, setSelectedStaffForIdCard, 'staff-idcard');
   };
 
   const handleOpenVerifyModal = (staff = null) => {
-    setSelectedStaffForVerify(staff || myStaffProfile || staffList[0]);
-    setIsVerifyModalOpen(true);
+    openModalWithHistory(setIsVerifyModalOpen, staff || myStaffProfile || staffList[0], setSelectedStaffForVerify, 'verify-qr');
+  };
+
+  const handleOpenSupabaseModal = () => {
+    openModalWithHistory(setIsSupabaseModalOpen, null, null, 'supabase-config');
   };
 
   // If user is not logged in, show LoginPage
@@ -340,7 +360,7 @@ export default function App() {
         onResetData={handleResetData}
         onImportData={handleImportData}
         onOpenVerifyModal={handleOpenVerifyModal}
-        onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
+        onOpenSupabaseModal={handleOpenSupabaseModal}
         onOpenMyIdCard={() => handleOpenIdCardModal(myStaffProfile)}
         isSupabaseActive={isSupabaseActive}
         searchQuery={searchQuery}
@@ -378,7 +398,7 @@ export default function App() {
                   
                   {isDeveloper && (
                     <div 
-                      onClick={() => setIsSupabaseModalOpen(true)}
+                      onClick={handleOpenSupabaseModal}
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider cursor-pointer transition-all ${
                         isSupabaseActive
                           ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300 hover:bg-emerald-900'
@@ -416,7 +436,7 @@ export default function App() {
                 </button>
                 {isDeveloper && (
                   <button
-                    onClick={() => setIsSupabaseModalOpen(true)}
+                    onClick={handleOpenSupabaseModal}
                     className="flex items-center gap-2 bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 font-semibold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl border border-emerald-700/60 transition-all"
                   >
                     <Database className="w-4 h-4 text-emerald-400" />
@@ -546,10 +566,10 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Modals */}
+      {/* Modals with Clean Return to Home on Close */}
       <StaffFormModal
         isOpen={isFormModalOpen}
-        onClose={() => setIsFormModalOpen(false)}
+        onClose={returnToHome}
         onSave={handleSaveStaff}
         initialData={editingStaff}
       />
@@ -557,7 +577,7 @@ export default function App() {
       <StaffDetailModal
         staff={selectedStaffForDetail}
         isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
+        onClose={returnToHome}
         onOpenIdCard={handleOpenIdCardModal}
         onOpenVerify={handleOpenVerifyModal}
         onEdit={handleOpenEditModal}
@@ -566,23 +586,23 @@ export default function App() {
       <IdCardModal
         staff={selectedStaffForIdCard}
         isOpen={isIdCardModalOpen}
-        onClose={() => setIsIdCardModalOpen(false)}
+        onClose={returnToHome}
         onVerify={handleOpenVerifyModal}
-        canDownload={isAdmin} // Only Admin & Developer can download/print
+        canDownload={isAdmin}
       />
 
       <PublicVerifyModal
         staff={selectedStaffForVerify}
         allStaff={staffList}
         isOpen={isVerifyModalOpen}
-        onClose={() => setIsVerifyModalOpen(false)}
+        onClose={returnToHome}
         onSelectStaff={(s) => setSelectedStaffForVerify(s)}
       />
 
       {isDeveloper && (
         <SupabaseModal
           isOpen={isSupabaseModalOpen}
-          onClose={() => setIsSupabaseModalOpen(false)}
+          onClose={returnToHome}
           staffList={staffList}
           onSupabaseConfigured={loadDatabase}
         />
