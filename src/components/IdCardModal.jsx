@@ -467,10 +467,12 @@ export default function IdCardModal({
                     border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="font-bold text-slate-800">Diterbitkan Oleh: PT JARRAK POS MEDIA NUSANTARA</div>
-                  <div>Jl. Danau Tempe No. 30, Sanur Kauh, Denpasar Selatan, Bali 80227</div>
-                  <div>Telp: (0361) 4481522 | Email: admin@jarrakpos.com</div>
-                  <div className="text-[7.5px] text-slate-500 mt-0.5 font-mono">SK Kemenkumham: AHU-0012389.AH.01.01 • Dewan Pers</div>
+                  <div className="space-y-0.5 text-[8.5px] text-slate-600">
+                    <div className="font-bold text-slate-800">Diterbitkan Oleh: JARRAK MEDIA GROUP</div>
+                    <div>Alamat: Jl. Danau Tempe No. 30, Sanur Kauh, Denpasar, Bali (80227)</div>
+                    <div>Email: admin@jarrakpos.com | Telp: (0361) 4481522</div>
+                    <div className="text-[7.5px] text-slate-500 mt-0.5 font-mono">SK Kemenkumham: AHU-0012389.AH.01.01 • Dewan Pers</div>
+                  </div>
                 </div>
               </div>
 

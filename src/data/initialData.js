@@ -65,7 +65,7 @@ export const INITIAL_STAFF = [
     ktaExpiry: "2029-12-31",
     photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80",
     address: "Denpasar, Bali",
-    bio: "Pimpinan Dewan Redaksi PT Jarrak Pos Media.",
+    bio: "Pimpinan Dewan Redaksi JARRAK MEDIA GROUP.",
     emergencyContact: "Kantor Pusat (0361-889201)",
     bloodType: "O",
     notes: "Dewan Redaksi Tertinggi Jarrakpos.com"
@@ -199,7 +199,7 @@ export const INITIAL_STAFF = [
     ktaExpiry: "2030-12-31",
     photoUrl: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=300&auto=format&fit=crop&q=80",
     address: "Denpasar, Bali",
-    bio: "Direktur Utama PT Jarrak Pos Media Nusantara.",
+    bio: "Direktur Utama JARRAK MEDIA GROUP.",
     emergencyContact: "Sekretaris Dirut",
     bloodType: "B",
     notes: "Pimpinan Korporasi & Badan Hukum Media."

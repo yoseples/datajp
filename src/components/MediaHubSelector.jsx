@@ -214,7 +214,7 @@ export default function MediaHubSelector({
 
       {/* Footer Notice */}
       <div className="max-w-6xl mx-auto w-full text-center text-xs text-slate-500 pt-6 border-t border-slate-800/80 relative z-10 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p>© {new Date().getFullYear()} PT JARRAK POS MEDIA NUSANTARA. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} JARRAK MEDIA GROUP. All rights reserved.</p>
         <div className="flex items-center gap-2 text-slate-400 font-medium">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
           <span>Sistem Bank Data Terpadu Multi-Media Redaksi</span>

@@ -71,7 +71,7 @@ export default function PublicVerifyModal({ staff, allStaff, isOpen, onClose, on
             SISTEM VERIFIKASI KEABSAHAN PERS
           </h2>
           <p className="text-xs text-emerald-100 mt-1 max-w-md mx-auto">
-            Layanan Resmi Pengecekan Kartu Tanda Anggota (KTA) & Dewan Redaksi <strong>PT JARRAK POS MEDIA</strong>
+            Layanan Resmi Pengecekan Kartu Tanda Anggota (KTA) & Dewan Redaksi <strong>JARRAK MEDIA GROUP</strong>
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export default function PublicVerifyModal({ staff, allStaff, isOpen, onClose, on
                     : 'STATUS KEANGGOTAAN PERLU DIKONFIRMASI'}
                 </div>
                 <div className="text-xs opacity-90 mt-0.5">
-                  Pemegang kartu adalah jurnalis/redaksi resmi terverifikasi PT Jarrak Pos Media.
+                  Pemegang kartu adalah jurnalis/redaksi resmi terverifikasi JARRAK MEDIA GROUP.
                 </div>
               </div>
             </div>
@@ -193,7 +193,7 @@ export default function PublicVerifyModal({ staff, allStaff, isOpen, onClose, on
               <div className="p-4 rounded-2xl bg-white border border-slate-200/80 text-xs text-slate-600 space-y-1.5">
                 <div className="font-bold text-slate-800 flex items-center gap-1.5">
                   <Building2 className="w-4 h-4 text-rose-600" />
-                  Kantor Redaksi PT JARRAK POS MEDIA NUSANTARA
+                  Kantor Redaksi JARRAK MEDIA GROUP
                 </div>
                 <p>Jalan Danau Tempe No. 30, Desa Sanur Kauh, Denpasar Selatan, Denpasar, Bali 80227</p>
                 <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-slate-100 text-slate-500">

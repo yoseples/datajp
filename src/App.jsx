@@ -740,7 +740,7 @@ export default function App() {
               </div>
               <div>
                 <div className="font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
-                  JARRAK<span className="text-rose-500">POS</span>.COM - PT JARRAK POS MEDIA NUSANTARA
+                  JARRAK<span className="text-rose-500">POS</span>.COM - JARRAK MEDIA GROUP
                 </div>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Kantor Pusat: Jalan Danau Tempe No. 30, Desa Sanur Kauh, Denpasar Selatan, Denpasar, Bali 80227
