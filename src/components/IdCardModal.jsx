@@ -233,9 +233,21 @@ export default function IdCardModal({
                 border: '1px solid #e2e8f0'
               }}
             >
+              {/* Watermark Logo Background (Front) */}
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0"
+                style={{ opacity: 0.07 }}
+              >
+                <img
+                  src={logoJarrakpos}
+                  alt="Watermark Jarrakpos"
+                  className="w-56 h-56 object-contain grayscale rotate-[-12deg]"
+                />
+              </div>
+
               {/* Card Top Header Banner */}
               <div 
-                className="p-4 pt-3.5 text-center text-white relative"
+                className="p-4 pt-3.5 text-center text-white relative z-10"
                 style={{
                   background: 'linear-gradient(135deg, #090d16 0%, #1e1b4b 60%, #881337 100%)'
                 }}
@@ -272,7 +284,7 @@ export default function IdCardModal({
               </div>
 
               {/* Photo & Badge Section */}
-              <div className="px-5 flex flex-col items-center mt-2 flex-1 justify-center">
+              <div className="px-5 flex flex-col items-center mt-2 flex-1 justify-center relative z-10">
                 
                 {/* Photo with Frame */}
                 <div className="relative">
@@ -391,9 +403,21 @@ export default function IdCardModal({
                 border: '1px solid #e2e8f0'
               }}
             >
+              {/* Watermark Logo Background (Back) */}
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0"
+                style={{ opacity: 0.07 }}
+              >
+                <img
+                  src={logoJarrakpos}
+                  alt="Watermark Jarrakpos"
+                  className="w-56 h-56 object-contain grayscale rotate-[-12deg]"
+                />
+              </div>
+
               {/* Back Header */}
               <div 
-                className="text-white p-4 pt-3.5 text-center"
+                className="text-white p-4 pt-3.5 text-center relative z-10"
                 style={{
                   background: 'linear-gradient(135deg, #090d16 0%, #1e1b4b 100%)'
                 }}
@@ -413,7 +437,7 @@ export default function IdCardModal({
               </div>
 
               {/* Legal Points */}
-              <div className="p-4 text-[9.5px] text-slate-700 space-y-2 leading-relaxed flex-1">
+              <div className="p-4 text-[9.5px] text-slate-700 space-y-2 leading-relaxed flex-1 relative z-10">
                 <div className="flex items-start gap-1.5">
                   <span className="font-bold text-rose-600">1.</span>
                   <span>Pemegang kartu ini adalah <strong>Wartawan/Anggota Resmi Jarrakpos.com</strong> yang dilindungi oleh UU Pers No. 40 Tahun 1999.</span>
