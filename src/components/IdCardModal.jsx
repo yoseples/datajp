@@ -13,6 +13,7 @@ import {
   Phone,
   Globe
 } from 'lucide-react';
+import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
 export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
   const [qrUrl, setQrUrl] = useState('');
@@ -70,8 +71,8 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
         {/* Header Bar */}
         <div className="bg-slate-950 px-6 py-4 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-rose-600/30 text-rose-400 border border-rose-500/30">
-              <ShieldCheck className="w-5 h-5" />
+            <div className="p-1.5 rounded-xl bg-white border border-rose-500/40 w-9 h-9 flex items-center justify-center">
+              <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain" />
             </div>
             <div>
               <h3 className="font-bold text-base sm:text-lg text-white flex items-center gap-2">
@@ -155,11 +156,11 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
               }}
             >
               {/* Card Top Header */}
-              <div className="p-4 pt-5 text-center text-white relative">
+              <div className="p-4 pt-4 text-center text-white relative">
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-7 h-7 rounded-lg bg-rose-600 flex items-center justify-center font-extrabold text-sm border border-rose-300">
-                      JP
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl bg-white p-0.5 shadow-md flex items-center justify-center">
+                      <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain" />
                     </div>
                     <div className="text-left leading-none">
                       <span className="font-black text-sm tracking-tight text-white block">JARRAKPOS</span>
@@ -167,12 +168,12 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
                     </div>
                   </div>
 
-                  <div className="px-2 py-0.5 rounded-full bg-rose-600/80 text-[9px] font-bold uppercase tracking-widest text-white border border-rose-400/40">
+                  <div className="px-2 py-0.5 rounded-full bg-rose-600/90 text-[9px] font-bold uppercase tracking-widest text-white border border-rose-400/40">
                     PERS
                   </div>
                 </div>
 
-                <div className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-2 border-t border-slate-700/60 pt-1">
+                <div className="text-[10px] font-semibold text-slate-300 uppercase tracking-widest mt-1.5 border-t border-slate-700/60 pt-1">
                   KARTU PERS / MEDIA RESMI
                 </div>
               </div>
@@ -264,11 +265,17 @@ export default function IdCardModal({ staff, isOpen, onClose, onVerify }) {
               }}
             >
               {/* Back Header */}
-              <div className="bg-slate-900 text-white p-4 pt-5 text-center">
-                <h4 className="font-extrabold text-xs tracking-wider text-rose-400 uppercase">
+              <div className="bg-slate-900 text-white p-4 pt-4 text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <div className="w-6 h-6 rounded-lg bg-white p-0.5 flex items-center justify-center">
+                    <img src={logoJarrakpos} alt="Jarrakpos" className="w-full h-full object-contain" />
+                  </div>
+                  <span className="text-xs font-bold tracking-wider text-rose-400 uppercase">JARRAKPOS.COM</span>
+                </div>
+                <h4 className="font-extrabold text-[11px] tracking-wider text-white uppercase">
                   KETENTUAN KARTU PERS RESMI
                 </h4>
-                <p className="text-[9px] text-slate-300 font-medium">
+                <p className="text-[8px] text-slate-300 font-medium">
                   UNDANG-UNDANG POKOK PERS NO. 40 TAHUN 1999
                 </p>
               </div>

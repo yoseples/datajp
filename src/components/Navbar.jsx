@@ -14,6 +14,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { exportToCSV, exportToJSON } from '../utils/storage';
+import logoJarrakpos from '../assets/logo-jarrakpos.png';
 
 export default function Navbar({ 
   currentUser,
@@ -58,9 +59,13 @@ export default function Navbar({
           
           {/* Brand Logo & Title */}
           <div className="flex items-center gap-3.5">
-            <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-rose-600 via-rose-700 to-rose-900 shadow-glow text-white font-extrabold text-2xl tracking-tighter border border-rose-400/30">
-              <span>JP</span>
-              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 animate-pulse" title="Sistem Aktif & Terhubung"></div>
+            <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-white p-1 shadow-glow border border-rose-500/40 shrink-0">
+              <img
+                src={logoJarrakpos}
+                alt="Jarrakpos Logo"
+                className="w-full h-full object-contain"
+              />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900 animate-pulse" title="Sistem Aktif"></div>
             </div>
 
             <div>
